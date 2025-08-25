@@ -1,0 +1,1629 @@
+/* Chat Container Styles */
+.chat-container {
+  width: 350px;
+  height: 500px;
+  position: fixed;
+  bottom: 100px;
+  right: 60px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(37, 99, 235, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* animation: containerGrow 2s infinite; */
+  z-index: 9999;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.chat-container.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+/* AI Agent Container - Ana içerik */
+.aiagent-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+/* Campaign Header */
+.campaign-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.campaign-header-left h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.campaign-count {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-top: 4px;
+  display: block;
+}
+
+.campaign-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.campaign-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Campaign Content */
+.campaign-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+/* Campaign Item */
+.campaign-item {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.campaign-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: #667eea;
+}
+
+.campaign-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.campaign-item-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.campaign-category {
+  background: #667eea;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.campaign-description {
+  margin: 0 0 12px 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.campaign-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.campaign-discount {
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.campaign-validity {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Campaign Footer */
+.campaign-footer {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: block; /* Aktif - müşteri istediğinde gizlemek için: display: none; */
+}
+
+/* Müşteri campaign footer'ı aktif etmek isterse bu CSS'i kullanabilir:
+.campaign-footer {
+  display: block !important;
+}
+*/
+
+.campaign-action-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.campaign-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Campaign Item Error State */
+.campaign-item.error-state {
+  border-color: #ef4444;
+  background: #fef2f2;
+  cursor: default;
+}
+
+.campaign-item.error-state:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #ef4444;
+}
+
+.campaign-item.error-state .error-category {
+  background: #ef4444;
+  color: white;
+}
+
+.campaign-item.error-state .error-discount {
+  background: #dc2626;
+  color: white;
+}
+
+.campaign-item.error-state .campaign-description {
+  color: #dc2626;
+}
+
+.campaign-retry-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.campaign-retry-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+
+
+/* FAQ Answer Expanded - For Campaign Style */
+.faq-answer-expanded {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  animation: fadeIn 0.3s ease;
+}
+
+.faq-answer-content {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 3px solid #667eea;
+}
+
+.faq-answer-content p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #4a5568;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Campaign Content Scrollbar */
+.campaign-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.campaign-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.campaign-content::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 3px;
+}
+
+.campaign-content::-webkit-scrollbar-thumb:hover {
+  background: #5a67d8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .campaign-item {
+    padding: 12px;
+  }
+  
+  .campaign-header {
+    padding: 12px;
+  }
+  
+  .campaign-content {
+    padding: 12px;
+  }
+}
+
+/* Main Header Container - Combined Header and Tabs */
+.main-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+
+/* Header Styles - No Background */
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: transparent;
+  color: white;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-arrow-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.back-arrow-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.back-arrow-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.agent-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.agent-avatar.large {
+  width: 37px;
+  height: 37px;
+}
+
+.agent-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.agent-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Tab Navigation Container - Below Header */
+.tab-navigation-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 6px;
+  background: rgba(37, 99, 235, 0.05);
+  border-bottom: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+/* Tabs Section - No Background */
+.tabs-section {
+  background: transparent;
+  padding: 2px 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Tab Navigation Styles */
+.tab-navigation {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.tab-navigation:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.tab-button.active {
+  background: rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+  transform: translateY(-1px);
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.icon-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.icon-button.sound-enabled {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Content Styles */
+.chat-content {
+  padding: 5px 10px 0px 10px;
+  flex: 1.5;
+  overflow-y: auto;
+  overflow-x: hidden; /* Yatay scroll'u engelle, sadece dikey scroll olsun */
+  position: relative;
+  min-height: 0;
+  /* Scroll stilleri - products-scroll-container ile aynı */
+  -webkit-overflow-scrolling: touch; /* iOS için düzgün kaydırma */
+  scrollbar-width: thin; /* Firefox için ince scrollbar */
+  scrollbar-color: #2563EB #F9FAFB; /* Firefox için scrollbar rengi */
+}
+
+/* Chat Content için Webkit scrollbar stilleri */
+.chat-content::-webkit-scrollbar {
+  width: 6px; /* Dikey scroll için genişlik */
+}
+
+.chat-content::-webkit-scrollbar-track {
+  background: #F9FAFB;
+  border-radius: 3px;
+}
+
+.chat-content::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 3px;
+}
+
+.message-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.message-group.user {
+  justify-content: flex-end;
+}
+
+.message {
+  padding: 8px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  position: relative;
+  max-width: 100%; /* Mesaj genişliğini sınırla */
+  overflow: visible; /* İçerik taşmasına izin ver */
+}
+
+.agent-message {
+  background-color: #F9FAFB;
+  color: #1F2937;
+}
+
+.user-message {
+  background-color: #2563EB;
+  color: white;
+}
+
+.message h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+}
+
+.message p {
+  margin: 0;
+  text-align: left;
+}
+
+/* Message Content Wrapper */
+.message-content-wrapper {
+  /* No padding needed since TTS buttons are removed */
+  overflow: visible; /* İçerik taşmasına izin ver */
+  width: 100%; /* Tam genişlik */
+}
+
+/* TTS Button Styles */
+.tts-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: rgba(37, 99, 235, 0.1);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+  z-index: 5;
+}
+
+.tts-button:hover {
+  background: rgba(37, 99, 235, 0.2);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.tts-button.user {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tts-button.user:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Playing state for TTS button */
+.tts-button.playing {
+  background: rgba(16, 185, 129, 0.2);
+  animation: pulse 1.5s infinite;
+}
+
+.tts-button.playing:hover {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+.tts-button.user.playing {
+  background: rgba(255, 255, 255, 0.3);
+  animation: pulse 1.5s infinite;
+}
+
+.tts-button.user.playing:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Shimmer Loading Effects */
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-message {
+  opacity: 0.8;
+}
+
+.shimmer-title {
+  background: linear-gradient(90deg, #e5e7eb 25%, #d1d5db 50%, #e5e7eb 75%);
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+}
+
+.shimmer-image {
+  background: linear-gradient(90deg, #f9fafb 25%, #f3f4f6 50%, #f9fafb 75%);
+}
+
+.shimmer-price {
+  background: linear-gradient(90deg, #dbeafe 25%, #bfdbfe 50%, #dbeafe 75%);
+}
+
+.shimmer-button {
+  background: linear-gradient(90deg, #e0e7ff 25%, #c7d2fe 50%, #e0e7ff 75%);
+}
+
+.shimmer-input {
+  background: linear-gradient(90deg, #f9fafb 25%, #f3f4f6 50%, #f9fafb 75%);
+  border: 1px solid #e5e7eb;
+}
+
+.shimmer-suggestion {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+}
+
+.shimmer-feedback {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Products Container Styles */
+.products-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden; /* Dikey scroll'u engelle */
+  padding: 10px 0;
+  margin: 15px 0;
+  -webkit-overflow-scrolling: touch; /* iOS için düzgün kaydırma */
+  scrollbar-width: thin; /* Firefox için ince scrollbar */
+  scrollbar-color: #2563EB #F9FAFB; /* Firefox için scrollbar rengi */
+  /* Force horizontal scroll to be visible */
+  min-height: 200px; /* Minimum yükseklik ver */
+  /* Touch ve mouse scroll için iyileştirmeler */
+  cursor: grab;
+  user-select: none; /* Text seçimini engelle */
+  /* Smooth scroll için */
+  scroll-behavior: smooth;
+  -webkit-scroll-behavior: smooth;
+  /* Scroll performansı için */
+  position: relative;
+  /* Force hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Son ürünün tam görünmesi için sağ padding */
+  padding-right: 10px;
+}
+
+.products-scroll-container:active {
+  cursor: grabbing;
+}
+
+/* Scroll container için ek optimizasyonlar */
+.products-scroll-container::-webkit-scrollbar {
+  height: 6px; /* Scrollbar'ı biraz daha görünür yap */
+  margin: 1px;
+}
+
+.products-scroll-container::-webkit-scrollbar-track {
+  background: #F9FAFB;
+  border-radius: 3px;
+}
+
+.products-scroll-container::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.products-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #1D4ED8; /* Hover durumunda daha koyu renk */
+}
+
+/* Firefox için scrollbar stilleri */
+.products-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #2563EB #F9FAFB;
+}
+
+/* Webkit scrollbar stilleri zaten yukarıda tanımlandı */
+
+.products-wrapper {
+  display: flex;
+  gap: 15px;
+  padding: 5px 15px 5px 5px; /* Sol: 5px, Sağ: 15px (son ürün için daha fazla boşluk) */
+  min-width: max-content; /* İçerik kadar genişlik */
+  flex-wrap: nowrap; /* Kartların alt satıra geçmesini engelle */
+  width: max-content; /* İçerik kadar genişlik zorla */
+  /* Force horizontal layout */
+  flex-direction: row;
+  align-items: stretch;
+  /* Ensure horizontal scroll is triggered */
+  justify-content: flex-start;
+  white-space: nowrap; /* Metinlerin alt satıra geçmesini engelle */
+  /* Scroll performansı için iyileştirmeler */
+  will-change: transform; /* GPU hızlandırma */
+  transform: translateZ(0); /* Hardware acceleration */
+  /* Force scroll container to recognize content width */
+  flex-shrink: 0;
+  /* Ensure proper sizing */
+  box-sizing: border-box;
+}
+
+.product-card {
+  flex: 0 0 150px;
+  min-width: 150px; /* Minimum genişlik zorla */
+  max-width: 150px; /* Maksimum genişlik sınırla */
+  width: 150px; /* Sabit genişlik */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  flex-shrink: 0; /* Kartların küçülmesini engelle */
+  /* Scroll sırasında performans için */
+  backface-visibility: hidden; /* GPU optimizasyonu */
+  -webkit-backface-visibility: hidden;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* İlk ve son ürün kartları için özel spacing */
+.product-card:first-child {
+  margin-left: 0; /* İlk ürün için sol margin sıfırla */
+}
+
+.product-card:last-child {
+  margin-right: 0; /* Son ürün için sağ margin sıfırla */
+}
+
+.product-image {
+  width: 100%;
+  height: 90px;
+  overflow: hidden;
+  flex-shrink: 0; /* Resmin küçülmesini engelle */
+  min-width: 150px; /* Minimum genişlik */
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-info {
+  padding: 8px;
+  flex-shrink: 0; /* Bilgi alanının küçülmesini engelle */
+  min-width: 150px; /* Minimum genişlik */
+}
+
+.product-info h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1F2937;
+  white-space: nowrap; /* Başlığın alt satıra geçmesini engelle */
+  overflow: hidden; /* Taşan metni gizle */
+  text-overflow: ellipsis; /* Taşan metin için ... göster */
+}
+
+.product-price {
+  color: #2563EB;
+  font-weight: 600;
+  margin: 6px 0;
+  font-size: 0.85rem;
+  white-space: nowrap; /* Fiyatın alt satıra geçmesini engelle */
+}
+
+.product-button {
+  width: 100%;
+  padding: 6px;
+  background-color: #2563EB;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.8rem;
+  white-space: nowrap; /* Buton metninin alt satıra geçmesini engelle */
+}
+
+.product-button:hover {
+  background-color: #1D4ED8;
+}
+
+/* AI Note Styles */
+.ai-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin: 6px 0;
+  max-width: auto;
+}
+
+.ai-icon {
+  background: #374151;
+  color: white;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+/* Action Buttons Styles */
+.action-buttons {
+  border-top: 1px solid #E5E7EB;
+}
+
+.action-buttons-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* iOS için düzgün kaydırma */
+  scrollbar-width: thin; /* Firefox için ince scrollbar */
+  scrollbar-color: #2563EB #F9FAFB; /* Firefox için scrollbar rengi */
+  user-select: none; /* Text seçimini engelle */
+}
+
+/* Webkit (Chrome, Safari) için scrollbar stilleri */
+.action-buttons-scroll-container::-webkit-scrollbar {
+  height: 3px;
+}
+
+.action-buttons-scroll-container::-webkit-scrollbar-track {
+  background: #F9FAFB;
+  border-radius: 3px;
+}
+
+.action-buttons-scroll-container::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 3px;
+}
+
+.action-buttons-wrapper {
+  display: flex;
+  gap: 12px;
+  padding: 5px;
+  min-width: max-content; /* İçerik kadar genişlik */
+}
+
+.secondary-button {
+  flex: 0 0 auto; /* Sabit genişlik yerine içerik kadar */
+  padding: 6px 10px;
+  border: none;
+  background-color: #F9FAFB;
+  color: #1F2937;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap; /* Metni tek satırda tut */
+  min-width: fit-content; /* İçerik kadar minimum genişlik */
+  font-size: 0.8rem;
+}
+
+.secondary-button:hover {
+  background-color: #E5E7EB;
+}
+
+/* Input Area Styles */
+.input-area {
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+#messageInput {
+  flex: 1;
+  padding: 8px 50px 8px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#messageInput:focus {
+  border-color: #2563EB;
+}
+
+.send-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(107, 114, 128, 0.6);
+  transition: color 0.2s;
+}
+
+.send-button:hover {
+  color: rgba(107, 114, 128, 0.8);
+}
+
+.send-button:disabled {
+  color: rgba(107, 114, 128, 0.3);
+  cursor: not-allowed;
+}
+
+.voice-button {
+  background: none;
+  border: none;
+  color: #1F2937;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin: 0 4px;
+  position: relative;
+}
+
+.voice-button:hover {
+  background-color: #f3f4f6;
+  transform: scale(1.05);
+}
+
+.voice-button:active {
+  transform: scale(0.95);
+}
+
+.voice-button:hover {
+  background-color: #F9FAFB;
+}
+
+.voice-button.recording {
+  background-color: transparent;
+  color: #2563EB;
+}
+
+/* Voice wave animations */
+.voice-wave {
+  transform-origin: center bottom;
+}
+
+/* CSS fallback animations for browsers that don't support SVG animations */
+@keyframes waveAnimation1 {
+  0%, 100% { height: 2px; transform: translateY(0); }
+  50% { height: 8px; transform: translateY(-3px); }
+}
+
+@keyframes waveAnimation2 {
+  0%, 100% { height: 6px; transform: translateY(0); }
+  50% { height: 12px; transform: translateY(-3px); }
+}
+
+@keyframes waveAnimation3 {
+  0%, 100% { height: 8px; transform: translateY(0); }
+  50% { height: 16px; transform: translateY(-4px); }
+}
+
+@keyframes waveAnimation4 {
+  0%, 100% { height: 6px; transform: translateY(0); }
+  50% { height: 12px; transform: translateY(-3px); }
+}
+
+@keyframes waveAnimation5 {
+  0%, 100% { height: 2px; transform: translateY(0); }
+  50% { height: 8px; transform: translateY(-3px); }
+}
+
+.voice-button.recording .wave-1 {
+  animation: waveAnimation1 0.6s infinite;
+}
+
+.voice-button.recording .wave-2 {
+  animation: waveAnimation2 0.8s infinite;
+}
+
+.voice-button.recording .wave-3 {
+  animation: waveAnimation3 0.7s infinite;
+}
+
+.voice-button.recording .wave-4 {
+  animation: waveAnimation4 0.9s infinite;
+}
+
+.voice-button.recording .wave-5 {
+  animation: waveAnimation5 0.65s infinite;
+}
+
+/* Footer Styles */
+.chat-footer {
+  padding: 6px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6B7280;
+  border-top: 1px solid #E5E7EB;
+}
+
+.separator {
+  margin: 0 8px;
+}
+
+.privacy-link {
+  color: #6B7280;
+  text-decoration: none;
+}
+
+.privacy-link:hover {
+  text-decoration: underline;
+}
+
+
+
+/* Bottom Avatar Styles */
+.bottom-avatar {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.3s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.bottom-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.bottom-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Feedback Button Styles */
+.feedback-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+
+.feedback-button {
+  background: none;
+  border: 1px solid #D1D5DB;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #6B7280;
+  transition: all 0.2s;
+}
+
+.feedback-button:hover {
+  background-color: #10B981;
+  color: white;
+  border-color: #10B981;
+}
+
+.feedback-button.negative:hover {
+  background-color: #EF4444;
+  border-color: #EF4444;
+}
+
+/* Scrollbar Styles */
+.products-scroll-container::-webkit-scrollbar {
+  height: 3px;
+  margin: 1px;
+}
+
+.products-scroll-container::-webkit-scrollbar-track {
+  background: #F9FAFB;
+  border-radius: 3px;
+}
+
+.products-scroll-container::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 3px;
+}
+
+.action-buttons-scroll-container::-webkit-scrollbar {
+  height: 3px;
+}
+
+.action-buttons-scroll-container::-webkit-scrollbar-track {
+  background: #F9FAFB;
+  border-radius: 3px;
+}
+
+.action-buttons-scroll-container::-webkit-scrollbar-thumb {
+  background: #2563EB;
+  border-radius: 3px;
+}
+
+/* Animations */
+/* @keyframes containerGrow removed - no more grow/shrink effect */
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
+
+
+/* Typing Indicator Styles */
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #2563EB;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Connection Status Styles */
+.connection-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  z-index: 10;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.connected {
+  background-color: #10B981;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.connecting {
+  background-color: #F59E0B;
+  animation: pulse 1s infinite;
+}
+
+.status-dot.disconnected {
+  background-color: #EF4444;
+}
+
+.status-dot.loading {
+  background-color: #3B82F6;
+  animation: pulse 1.5s infinite;
+}
+
+.status-dot.error {
+  background-color: #EF4444;
+}
+
+.status-dot.ready {
+  background-color: #10B981;
+}
+
+.status-text {
+  font-size: 9px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 9px;
+  max-width: 120px;
+}
+
+.error-icon {
+  font-size: 8px;
+  flex-shrink: 0;
+}
+
+.error-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Order Tracking Styles */
+.order-input-container {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  align-items: center;
+}
+
+.order-number-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.order-number-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.track-order-button {
+  padding: 8px 16px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.track-order-button:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.track-order-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.order-tracking-details {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.order-tracking-details h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.order-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.order-id {
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 16px;
+}
+
+.order-status {
+  color: #059669;
+  font-weight: 500;
+}
+
+.order-date {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.order-items {
+  margin-bottom: 16px;
+}
+
+.order-items h4 {
+  margin: 0 0 12px 0;
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border: 1px solid #f3f4f6;
+}
+
+.item-name {
+  flex: 1;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.item-quantity {
+  color: #6b7280;
+  margin: 0 8px;
+}
+
+.item-price {
+  font-weight: 600;
+  color: #059669;
+}
+
+.shipping-info {
+  margin-bottom: 16px;
+}
+
+.shipping-info h4 {
+  margin: 0 0 12px 0;
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.shipping-detail {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  border: 1px solid #f3f4f6;
+}
+
+.shipping-detail strong {
+  color: #374151;
+}
+
+.order-message {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #2563eb;
+  margin-top: 16px;
+}
+
+.order-message p {
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+/* Simplified Cargo Tracking Styles */
+.cargo-tracking-simple {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.cargo-tracking-simple h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.cargo-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.cargo-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.cargo-info-item strong {
+  color: #374151;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.cargo-info-item span {
+  color: #1f2937;
+  text-align: right;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.in_transit {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.delivered {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.pending {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.tracking-number {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #2563eb;
+  letter-spacing: 1px;
+}
+
+/* Tab Content Styles */
+.tab-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.tab-content.transitioning {
+  pointer-events: none;
+}
+
+.tab-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(20px);
+  transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-panel.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+/* Campaign Tab Content Styles */
+.campaign-tab-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+/* Shimmer Loading Effect */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Error State */
+.error-state {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+/* Empty State */
+.empty-state {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+/* Campaign Details */
+.campaign-details {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* FAQ Feedback */
+.faq-feedback {
+  background: #f8fafc;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+}
+
+.faq-feedback button {
+  transition: all 0.2s ease-in-out;
+}
+
+.faq-feedback button:hover {
+  transform: translateY(-1px);
+}

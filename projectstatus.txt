@@ -1,0 +1,643 @@
+# KNOWLEDGE BASE SİSTEMİ PROJE TASLAĞI
+
+##  PROJE ÖZETİ
+
+### Amaç
+Kullanıcıların yükleyeceği dosyalar (JSON, XML, CSV) veya URL'lerden çekilen verileri chunk'lara bölen, AI tabanlı intent detection ile similarity search yapan ve kullanıcı sorularına akıllı yanıtlar üreten knowledge base sistemi.
+Yapılacak düzenlemeler mevcut proje controller, view, api, web, migration, model alanlarında yapılacaktır Yeni geliştirmeler için yeni dosyalar kullanılabilir
+### Teknoloji Stack
+- **Frontend**: React + TypeScript (Widget)
+- **Backend**: Laravel 11 (API)
+- **AI Service**: OpenAI GPT5 mini + Embeddings text-embedding-ada-00
+- Laravel api - AI sevice işlemleri için https://platform.openai.com/docs/api-reference/ deki tüm dökümanları oku projeye uygun şekilde düzenleme yap
+- **Database**: MySQL/PostgreSQL
+- **Vector Search**: MySQL içinde chunk embedding (JSON vector field ile)
+- **File Processing**: Laravel Excel, XML Parser, JSON Parser
+
+
+---
+
+## ️ SİSTEM MİMARİSİ
+
+### 1. Veri Akışı
+```
+User Upload/URL → File Parser → Content Analyzer → Chunking Engine → Vector Embeddings → Storage
+     ↓
+User Query → Intent Detection → Semantic Search → Response Generation → AI Enhancement → Output
+```
+
+Bu kapsamlı proje taslağı, knowledge base sistemi için gerekli tüm bileşenleri, gelişmiş e-ticaret tablo yapılarını ve implementasyon adımlarını içermektedir. Sistem, kullanıcıların yükleyeceği dosyaları chunk'lara bölecek, AI tabanlı intent detection ile similarity search yapacak ve akıllı yanıtlar üretecektir.
+
+Özellikle e-ticaret odaklı tablo yapıları (products, categories, brands, faqs, blogs, reviews, orders, carts) detaylı olarak tasarlanmış ve knowledge base sistemi ile entegre edilmiştir.
+
+### 2. Katmanlı Yapı
+- **Presentation Layer**: React Widget + Proje içindeki Dashboard sayfasları üzerinde iyileştirme
+- **API Layer**: Laravel Controllers + Middleware
+- **Business Logic**: Services + Intent Detection
+- **Data Layer**: Repositories + Vector Database
+- **Storage Layer**: File Storage + Database
+
+---
+
+## 🗄️ GELİŞMİŞ E-TİCARET TABLO YAPILARI
+Bazı tablolara benzer isimlerde tablolar olutşrulmuş olabilir model ve migrationlarda iyileştirmeler yaparak ekleyebilirsin.
+### 1. Ana Ürün Tablosu (products)
+```sql
+CREATE TABLE products (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    external_id VARCHAR(255) NULL,
+    name VARCHAR(500) NOT NULL,
+    description TEXT NULL,
+    short_description VARCHAR(1000) NULL,
+    sku VARCHAR(100) NULL,
+    barcode VARCHAR(100) NULL,
+    brand_id BIGINT UNSIGNED NULL,
+    category_id BIGINT UNSIGNED NULL,
+    subcategory_id BIGINT UNSIGNED NULL,
+    price DECIMAL(10,2) NOT NULL,
+    compare_price DECIMAL(10,2) NULL,
+    cost_price DECIMAL(10,2) NULL,
+    sale_price DECIMAL(10,2) NULL,
+    sale_start_date DATETIME NULL,
+    sale_end_date DATETIME NULL,
+    weight DECIMAL(8,3) NULL,
+    dimensions JSON NULL, -- {length, width, height, unit}
+    stock_quantity INT DEFAULT 0,
+    low_stock_threshold INT DEFAULT 5,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_bestseller BOOLEAN DEFAULT FALSE,
+    is_new BOOLEAN DEFAULT FALSE,
+    is_on_sale BOOLEAN DEFAULT FALSE,
+    rating_average DECIMAL(3,2) DEFAULT 0.00,
+    rating_count INT DEFAULT 0,
+    view_count INT DEFAULT 0,
+    sold_count INT DEFAULT 0,
+    meta_title VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    meta_keywords TEXT NULL,
+    seo_url VARCHAR(500) NULL,
+    tags JSON NULL,
+    attributes JSON NULL, -- {color, size, material, etc.}
+    variants JSON NULL, -- {color_variants, size_variants}
+    images JSON NULL, -- {main_image, gallery_images, thumbnail}
+    documents JSON NULL, -- {manual, warranty, datasheet}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_category (site_id, category_id),
+    INDEX idx_brand (brand_id),
+    INDEX idx_price (price),
+    INDEX idx_stock (stock_quantity),
+    INDEX idx_rating (rating_average),
+    INDEX idx_sale (is_on_sale, sale_end_date),
+    FULLTEXT idx_search (name, description, tags)
+);
+```
+
+### 2. Kategori Tablosu (categories)
+```sql
+CREATE TABLE categories (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    parent_id BIGINT UNSIGNED NULL,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    short_description VARCHAR(500) NULL,
+    image_url VARCHAR(500) NULL,
+    icon_class VARCHAR(100) NULL,
+    sort_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    meta_title VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    meta_keywords TEXT NULL,
+    seo_url VARCHAR(500) NULL,
+    attributes JSON NULL, -- {filters, specifications}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_parent (site_id, parent_id),
+    INDEX idx_slug (slug),
+    INDEX idx_sort (sort_order),
+    FULLTEXT idx_search (name, description)
+);
+```
+
+### 3. Marka Tablosu (brands)
+```sql
+CREATE TABLE brands (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    logo_url VARCHAR(500) NULL,
+    website_url VARCHAR(500) NULL,
+    country_of_origin VARCHAR(100) NULL,
+    founded_year INT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    sort_order INT DEFAULT 0,
+    meta_title VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    seo_url VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site (site_id),
+    INDEX idx_slug (slug),
+    INDEX idx_sort (sort_order)
+);
+```
+
+### 4. FAQ Tablosu (faqs)
+```sql
+CREATE TABLE faqs (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    category_id BIGINT UNSIGNED NULL,
+    product_id BIGINT UNSIGNED NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    short_answer VARCHAR(1000) NULL,
+    keywords JSON NULL,
+    tags JSON NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    sort_order INT DEFAULT 0,
+    view_count INT DEFAULT 0,
+    helpful_count INT DEFAULT 0,
+    not_helpful_count INT DEFAULT 0,
+    meta_title VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    seo_url VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_category (site_id, category_id),
+    INDEX idx_product (product_id),
+    INDEX idx_sort (sort_order),
+    FULLTEXT idx_search (question, answer, keywords)
+);
+```
+
+### 5. Blog/İçerik Tablosu (blogs)
+```sql
+CREATE TABLE blogs (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    category_id BIGINT UNSIGNED NULL,
+    author_id BIGINT UNSIGNED NULL,
+    title VARCHAR(500) NOT NULL,
+    slug VARCHAR(500) NOT NULL,
+    excerpt VARCHAR(1000) NULL,
+    content LONGTEXT NOT NULL,
+    featured_image VARCHAR(500) NULL,
+    gallery_images JSON NULL,
+    tags JSON NULL,
+    keywords JSON NULL,
+    is_published BOOLEAN DEFAULT FALSE,
+    published_at TIMESTAMP NULL,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    view_count INT DEFAULT 0,
+    like_count INT DEFAULT 0,
+    comment_count INT DEFAULT 0,
+    share_count INT DEFAULT 0,
+    reading_time INT NULL, -- dakika cinsinden
+    meta_title VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    meta_keywords TEXT NULL,
+    seo_url VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_category (site_id, category_id),
+    INDEX idx_author (author_id),
+    INDEX idx_published (is_published, published_at),
+    INDEX idx_slug (slug),
+    FULLTEXT idx_search (title, content, tags, keywords)
+);
+```
+
+### 6. Ürün Özellikleri Tablosu (product_attributes)
+```sql
+CREATE TABLE product_attributes (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    display_name VARCHAR(255) NOT NULL,
+    type ENUM('text', 'number', 'boolean', 'select', 'multiselect', 'color', 'image') NOT NULL,
+    is_required BOOLEAN DEFAULT FALSE,
+    is_filterable BOOLEAN DEFAULT FALSE,
+    is_searchable BOOLEAN DEFAULT FALSE,
+    is_comparable BOOLEAN DEFAULT FALSE,
+    is_visible BOOLEAN DEFAULT TRUE,
+    sort_order INT DEFAULT 0,
+    options JSON NULL, -- select/multiselect için seçenekler
+    validation_rules JSON NULL, -- validation kuralları
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site (site_id),
+    INDEX idx_type (type),
+    INDEX idx_sort (sort_order)
+);
+```
+
+### 7. Ürün Değerleri Tablosu (product_attribute_values)
+```sql
+CREATE TABLE product_attribute_values (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    product_id BIGINT UNSIGNED NOT NULL,
+    attribute_id BIGINT UNSIGNED NOT NULL,
+    value TEXT NOT NULL,
+    display_value VARCHAR(255) NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_product_attribute (product_id, attribute_id),
+    INDEX idx_value (value(100)),
+    UNIQUE KEY unique_product_attribute (product_id, attribute_id)
+);
+```
+
+### 8. Müşteri Yorumları Tablosu (reviews)
+```sql
+CREATE TABLE reviews (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    product_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NULL,
+    order_id BIGINT UNSIGNED NULL,
+    rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    title VARCHAR(255) NULL,
+    comment TEXT NULL,
+    pros TEXT NULL,
+    cons TEXT NULL,
+    is_verified_purchase BOOLEAN DEFAULT FALSE,
+    is_approved BOOLEAN DEFAULT FALSE,
+    is_helpful BOOLEAN DEFAULT FALSE,
+    helpful_count INT DEFAULT 0,
+    not_helpful_count INT DEFAULT 0,
+    images JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_product (site_id, product_id),
+    INDEX idx_user (user_id),
+    INDEX idx_rating (rating),
+    INDEX idx_verified (is_verified_purchase),
+    INDEX idx_approved (is_approved)
+);
+```
+
+### 9. Sipariş Tablosu (orders)
+```sql
+CREATE TABLE orders (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NULL,
+    order_number VARCHAR(100) UNIQUE NOT NULL,
+    status ENUM('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded') NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL,
+    tax_amount DECIMAL(10,2) DEFAULT 0.00,
+    shipping_amount DECIMAL(10,2) DEFAULT 0.00,
+    discount_amount DECIMAL(10,2) DEFAULT 0.00,
+    coupon_code VARCHAR(100) NULL,
+    payment_method VARCHAR(100) NULL,
+    payment_status ENUM('pending', 'paid', 'failed', 'refunded') NOT NULL,
+    shipping_method VARCHAR(100) NULL,
+    shipping_address JSON NOT NULL,
+    billing_address JSON NOT NULL,
+    customer_note TEXT NULL,
+    estimated_delivery_date DATE NULL,
+    actual_delivery_date DATE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_user (site_id, user_id),
+    INDEX idx_order_number (order_number),
+    INDEX idx_status (status),
+    INDEX idx_payment_status (payment_status),
+    INDEX idx_created (created_at)
+);
+```
+
+### 10. Sepet Tablosu (carts)
+```sql
+CREATE TABLE carts (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NULL,
+    session_id VARCHAR(255) NULL,
+    status ENUM('active', 'abandoned', 'converted', 'expired') DEFAULT 'active',
+    total_amount DECIMAL(10,2) DEFAULT 0.00,
+    item_count INT DEFAULT 0,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    abandoned_at TIMESTAMP NULL,
+    converted_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_user (site_id, user_id),
+    INDEX idx_session (session_id),
+    INDEX idx_status (status),
+    INDEX idx_last_activity (last_activity)
+);
+```
+
+---
+
+## 🔧 KNOWLEDGE BASE SİSTEMİ TABLOLARI
+
+### 1. Knowledge Base Ana Tablosu (knowledge_bases)
+```sql
+CREATE TABLE knowledge_bases (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    source_type ENUM('file', 'url', 'api', 'manual') NOT NULL,
+    source_path VARCHAR(1000) NULL,
+    source_config JSON NULL, -- API keys, headers, etc.
+    file_type ENUM('json', 'xml', 'csv', 'excel', 'pdf', 'txt') NULL,
+    file_size BIGINT NULL,
+    total_records INT DEFAULT 0,
+    processed_records INT DEFAULT 0,
+    chunk_count INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_processing BOOLEAN DEFAULT FALSE,
+    last_processed_at TIMESTAMP NULL,
+    processing_status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+    error_message TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site (site_id),
+    INDEX idx_source_type (source_type),
+    INDEX idx_status (processing_status),
+    INDEX idx_active (is_active)
+);
+```
+
+### 2. Knowledge Chunks Tablosu (knowledge_chunks)
+```sql
+CREATE TABLE knowledge_chunks (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    knowledge_base_id BIGINT UNSIGNED NOT NULL,
+    chunk_index INT NOT NULL,
+    content TEXT NOT NULL,
+    content_hash VARCHAR(64) NOT NULL,
+    content_type ENUM('product', 'faq', 'blog', 'review', 'category', 'general') NOT NULL,
+    entity_type VARCHAR(100) NULL, -- products, categories, brands, etc.
+    entity_id BIGINT UNSIGNED NULL,
+    metadata JSON NULL, -- {table_name, field_names, record_id, etc.}
+    embedding_vector JSON NULL, -- AI embedding vector
+    vector_id VARCHAR(255) NULL, -- External vector DB ID
+    chunk_size INT NOT NULL, -- karakter sayısı
+    word_count INT NOT NULL,
+    is_indexed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_knowledge_base (knowledge_base_id),
+    INDEX idx_chunk_index (chunk_index),
+    INDEX idx_content_type (content_type),
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_indexed (is_indexed),
+    FULLTEXT idx_content (content)
+);
+```
+
+### 3. Intent Patterns Tablosu (intent_patterns)
+```sql
+CREATE TABLE intent_patterns (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    intent_name VARCHAR(255) NOT NULL,
+    intent_category VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    keywords JSON NOT NULL, -- ["arama", "bul", "göster"]
+    synonyms JSON NULL, -- ["ürün", "item", "product"]
+    confidence_threshold DECIMAL(3,2) DEFAULT 0.70,
+    response_template TEXT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    usage_count INT DEFAULT 0,
+    success_rate DECIMAL(5,2) DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_intent (site_id, intent_name),
+    INDEX idx_category (intent_category),
+    INDEX idx_active (is_active),
+    INDEX idx_confidence (confidence_threshold)
+);
+```
+
+### 4. Query Logs Tablosu (query_logs)
+```sql
+CREATE TABLE query_logs (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    site_id BIGINT UNSIGNED NOT NULL,
+    session_id VARCHAR(255) NULL,
+    user_id BIGINT UNSIGNED NULL,
+    query_text TEXT NOT NULL,
+    detected_intent VARCHAR(255) NULL,
+    confidence_score DECIMAL(3,2) NULL,
+    response_text TEXT NULL,
+    response_template VARCHAR(255) NULL,
+    chunks_used JSON NULL, -- Kullanılan chunk ID'leri
+    response_time_ms INT NULL,
+    is_successful BOOLEAN DEFAULT TRUE,
+    error_message TEXT NULL,
+    user_feedback ENUM('helpful', 'not_helpful', 'neutral') NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_session (site_id, session_id),
+    INDEX idx_user (user_id),
+    INDEX idx_intent (detected_intent),
+    INDEX idx_confidence (confidence_score),
+    INDEX idx_feedback (user_feedback),
+    INDEX idx_created (created_at),
+    FULLTEXT idx_query (query_text)
+);
+```
+
+---
+
+## 🚀 YAPILACAKLAR LİSTESİ
+
+### Phase 1: Temel Altyapı (Hafta 1-2)
+- [ ] **Database Migrations**: Tüm tablo yapılarını oluştur
+- [ ] **File Upload System**: Dosya yükleme ve URL parsing
+- [ ] **Content Parser Service**: JSON, XML, CSV parser'ları
+- [ ] **Chunking Engine**: Veri chunk'lara bölme algoritması
+- [ ] **Vector Database Setup**: Pinecone/Weaviate entegrasyonu
+
+### Phase 2: AI Entegrasyonu (Hafta 3-4)
+- [ ] **Embedding Service**: OpenAI embeddings API entegrasyonu
+- [ ] **Intent Detection**: Gelişmiş intent classification
+- [ ] **Similarity Search**: Vector similarity search algoritması
+- [ ] **Response Generation**: AI-powered response üretimi
+- [ ] **Confidence Scoring**: Threshold tabanlı güven skorlama
+
+### Phase 3: Knowledge Base Management (Hafta 5-6)
+- [ ] **Proje içindeki Dashboard sayfasları üzerinde iyileştirme**: Knowledge base yönetim paneli
+- [ ] **Content Processing**: Otomatik content analysis
+- [ ] **Chunk Management**: Chunk CRUD işlemleri
+- [ ] **Quality Control**: Content quality validation
+- [ ] **Bulk Operations**: Toplu veri işleme
+
+### Phase 4: Widget Integration (Hafta 7-8)
+- [ ] **React Widget**: Knowledge base chat widget'ı
+- [ ] **Query Interface**: Kullanıcı sorgu arayüzü
+- [ ] **Response Display**: AI yanıt gösterimi
+- [ ] **Template System**: Response template'leri
+- [ ] **Real-time Updates**: Live response streaming
+
+### Phase 5: Advanced Features (Hafta 9-10)
+- [ ] **Multi-language Support**: Çoklu dil desteği
+- [ ] **Context Awareness**: Conversation context tracking
+- [ ] **Learning System**: User feedback ile öğrenme
+- [ ] **Analytics Dashboard**: Performance metrics
+- [ ] **A/B Testing**: Response optimization
+
+### Phase 6: Production & Optimization (Hafta 11-12)
+- [ ] **Performance Optimization**: Response time optimization
+- [ ] **Caching Strategy**: Smart caching implementation
+- [ ] **Error Handling**: Comprehensive error management
+- [ ] **Monitoring**: System health monitoring
+- [ ] **Documentation**: API ve kullanım kılavuzları
+
+---
+
+## 🔍 TEKNİK DETAYLAR
+
+### 1. Chunking Algoritması
+```php
+class ContentChunker
+{
+    public function chunkContent(string $content, array $config): array
+    {
+        $chunks = [];
+        $maxChunkSize = $config['max_chunk_size'] ?? 1000;
+        $overlapSize = $config['overlap_size'] ?? 200;
+        
+        // Content'i cümlelere böl
+        $sentences = $this->splitIntoSentences($content);
+        
+        $currentChunk = '';
+        $chunkIndex = 0;
+        
+        foreach ($sentences as $sentence) {
+            if (strlen($currentChunk . $sentence) > $maxChunkSize) {
+                if (!empty($currentChunk)) {
+                    $chunks[] = $this->createChunk($currentChunk, $chunkIndex++);
+                    $currentChunk = $this->getOverlap($currentChunk, $overlapSize);
+                }
+            }
+            $currentChunk .= $sentence . ' ';
+        }
+        
+        // Son chunk'ı ekle
+        if (!empty($currentChunk)) {
+            $chunks[] = $this->createChunk($currentChunk, $chunkIndex);
+        }
+        
+        return $chunks;
+    }
+}
+```
+
+### 2. Intent Detection Service
+```php
+class AdvancedIntentService
+{
+    public function detectIntent(string $query, array $context): array
+    {
+        // 1. Keyword-based detection
+        $keywordIntent = $this->keywordDetection($query);
+        
+        // 2. AI-powered detection
+        $aiIntent = $this->aiDetection($query, $context);
+        
+        // 3. Context-aware scoring
+        $contextScore = $this->calculateContextScore($aiIntent, $context);
+        
+        // 4. Final intent determination
+        $finalIntent = $this->determineFinalIntent($keywordIntent, $aiIntent, $contextScore);
+        
+        return $finalIntent;
+    }
+}
+```
+
+### 3. Vector Search Service
+```php
+class VectorSearchService
+{
+    public function searchSimilarChunks(string $query, int $limit = 5): array
+    {
+        // 1. Query embedding oluştur
+        $queryEmbedding = $this->createEmbedding($query);
+        
+        // 2. Vector database'de similarity search
+        $similarChunks = $this->vectorDB->search($queryEmbedding, $limit);
+        
+        // 3. Relevance scoring
+        $scoredChunks = $this->scoreRelevance($similarChunks, $query);
+        
+        // 4. Threshold filtering
+        $filteredChunks = $this->filterByThreshold($scoredChunks, 0.7);
+        
+        return $filteredChunks;
+    }
+}
+```
+
+---
+
+##  PERFORMANS METRİKLERİ
+
+### Technical Metrics
+- **Response Time**: < 500ms (AI response generation)
+- **Chunking Speed**: > 1000 records/second
+- **Search Accuracy**: > 90% relevance score
+- **System Uptime**: > 99.9%
+- **Memory Usage**: < 2GB (per knowledge base)
+
+### Business Metrics
+- **User Satisfaction**: > 4.5/5 rating
+- **Query Success Rate**: > 85%
+- **Response Relevance**: > 90%
+- **Learning Improvement**: > 15% monthly improvement
+
+---
+
+##  SONRAKI ADIMLAR
+
+1. **Database Schema Creation**: Tüm migration'ları oluştur
+2. **File Processing Service**: Content parser'ları implement et
+3. **Chunking Engine**: Veri bölme algoritmasını geliştir
+4. **Vector Database Setup**: Pinecone/Weaviate kurulumu
+5. **AI Service Integration**: OpenAI embeddings entegrasyonu
+6. **Proje içindeki Dashboard sayfasları üzerinde iyileştirme**: Knowledge base yönetim paneli
+7. **Widget Development**: React chat widget'ı
+8. **Testing & Optimization**: Performance testing ve optimization
+
+---
+
+## 📝 NOTLAR
+
+- Her knowledge base için ayrı vector namespace kullan
+- Chunk overlap ile context continuity sağla
+- User feedback ile intent patterns'i sürekli güncelle
+- Multi-language support için locale-specific embeddings
+- Real-time processing için queue system kullan
+- Content quality için automated validation rules
+- Security için content sanitization ve access control

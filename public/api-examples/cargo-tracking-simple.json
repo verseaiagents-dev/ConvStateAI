@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "data": {
+    "tracking_number": "MNG123456789",
+    "status": "dağıtımda",
+    "status_description": "Kargonuz dağıtıma çıktı",
+    "current_location": "Kadıköy, İstanbul",
+    "estimated_delivery": "bugün",
+    "carrier": "MNG Kargo",
+    "timeline": [
+      {
+        "status": "kargoya_verildi",
+        "description": "Kargonuz kargo firması tarafından alındı",
+        "date": "2024-01-16"
+      },
+      {
+        "status": "dağıtıma_çıktı",
+        "description": "Kargonuz dağıtıma çıktı",
+        "date": "2024-01-17"
+      }
+    ]
+  },
+  "message": "Kargo takip bilgileri başarıyla getirildi"
+}

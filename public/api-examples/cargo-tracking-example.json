@@ -1,0 +1,130 @@
+{
+  "success": true,
+  "data": {
+    "tracking": {
+      "tracking_number": "MNG123456789",
+      "order_id": "ORD-2024-001234",
+      "customer_name": "Ahmet Yılmaz",
+      "carrier": "MNG Kargo",
+      "carrier_code": "MNG",
+      "status": "dağıtımda",
+      "status_code": "out_for_delivery",
+      "status_description": "Kargonuz dağıtıma çıktı",
+      "current_location": {
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "facility": "Kadıköy Dağıtım Merkezi",
+        "coordinates": {
+          "latitude": 40.9909,
+          "longitude": 29.0303
+        }
+      },
+      "origin": {
+        "city": "İstanbul",
+        "district": "Beyoğlu",
+        "facility": "Merkez Depo"
+      },
+      "destination": {
+        "street": "Atatürk Caddesi No:123",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "postal_code": "34700",
+        "country": "Türkiye",
+        "coordinates": {
+          "latitude": 40.9909,
+          "longitude": 29.0303
+        }
+      },
+      "shipping_details": {
+        "method": "standart_kargo",
+        "weight": "0.5 kg",
+        "dimensions": "20x15x10 cm",
+        "package_type": "kutu",
+        "fragile": false,
+        "insurance": true,
+        "insurance_amount": 15000.00
+      },
+      "timeline": [
+        {
+          "date": "2024-01-16T09:00:00Z",
+          "time": "09:00",
+          "status": "kargoya_verildi",
+          "status_code": "picked_up",
+          "description": "Kargonuz kargo firması tarafından alındı",
+          "location": "Merkez Depo, İstanbul",
+          "icon": "📦"
+        },
+        {
+          "date": "2024-01-16T14:30:00Z",
+          "time": "14:30",
+          "status": "aktarma_merkezinde",
+          "status_code": "in_transit",
+          "description": "Kargonuz aktarma merkezinde işleme alındı",
+          "location": "İstanbul Aktarma Merkezi",
+          "icon": "🏢"
+        },
+        {
+          "date": "2024-01-17T08:00:00Z",
+          "time": "08:00",
+          "status": "dağıtım_merkezinde",
+          "status_code": "arrived_at_delivery",
+          "description": "Kargonuz dağıtım merkezine ulaştı",
+          "location": "Kadıköy Dağıtım Merkezi",
+          "icon": "🚚"
+        },
+        {
+          "date": "2024-01-17T09:15:00Z",
+          "time": "09:15",
+          "status": "dağıtıma_çıktı",
+          "status_code": "out_for_delivery",
+          "description": "Kargonuz dağıtıma çıktı",
+          "location": "Kadıköy Dağıtım Merkezi",
+          "icon": "🚛"
+        }
+      ],
+      "delivery": {
+        "estimated_delivery_date": "2024-01-17",
+        "estimated_delivery_time": "09:00 - 18:00",
+        "delivery_attempts": 0,
+        "max_delivery_attempts": 3,
+        "delivery_instructions": "Kapıda ödeme yok, sadece teslim",
+        "signature_required": true,
+        "delivery_contact": {
+          "name": "Ahmet Yılmaz",
+          "phone": "+90 532 123 45 67"
+        }
+      },
+      "package_info": {
+        "contents": "Elektronik ürünler",
+        "declared_value": 13299.98,
+        "currency": "TRY",
+        "customs_declaration": false,
+        "restrictions": "Yok"
+      },
+      "support": {
+        "carrier_phone": "+90 212 123 45 67",
+        "carrier_email": "info@mngkargo.com",
+        "carrier_website": "https://www.mngkargo.com.tr",
+        "tracking_url": "https://www.mngkargo.com.tr/takip?code=MNG123456789",
+        "customer_service": {
+          "phone": "+90 212 123 45 67",
+          "email": "destek@example.com",
+          "live_chat": "https://example.com/chat"
+        }
+      },
+      "notifications": {
+        "sms_enabled": true,
+        "email_enabled": true,
+        "push_enabled": false,
+        "last_notification": "2024-01-17T09:15:00Z"
+      }
+    },
+    "meta": {
+      "timestamp": "2024-01-17T09:30:00Z",
+      "api_version": "1.0",
+      "request_id": "req-987654321",
+      "cache_expires": "2024-01-17T10:00:00Z"
+    }
+  },
+  "message": "Kargo takip bilgileri başarıyla getirildi"
+}

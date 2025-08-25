@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Conversion Logo Demo</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 40px;
+            color: #1f2937;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+        }
+        
+        .logo-section {
+            margin-bottom: 40px;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f9fafb;
+        }
+        
+        .logo-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #374151;
+        }
+        
+        .logo-display {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .logo-info {
+            flex: 1;
+        }
+        
+        .logo-description {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .logo-specs {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .avatar-demo {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .avatar-example {
+            text-align: center;
+        }
+        
+        .avatar-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        
+        .agent-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .agent-avatar.large {
+            width: 37px;
+            height: 37px;
+        }
+        
+        .bottom-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .avatar-example img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .features {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+        
+        .features h3 {
+            margin-top: 0;
+            font-size: 1.3rem;
+        }
+        
+        .features ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        
+        .features li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .usage-code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        .code-comment {
+            color: #9ca3af;
+        }
+        
+        .code-property {
+            color: #60a5fa;
+        }
+        
+        .code-value {
+            color: #34d399;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Conversion Logo</h1>
+        
+        <div class="logo-section">
+            <div class="logo-title">Ana Logo (60x60px) - Bottom Avatar</div>
+            <div class="logo-display">
+                <div class="avatar-example">
+                    <div class="avatar-label">Bottom Avatar</div>
+                    <div class="bottom-avatar">
+                        <img src="/imgs/ai-conversion-logo.svg" alt="AI Conversion Assistant">
+                    </div>
+                </div>
+                <div class="logo-info">
+                    <div class="logo-description">
+                        Bu logo, chat widget'ın sağ alt köşesinde bulunan büyük avatar için tasarlanmıştır. 
+                        Kullanıcıların dikkatini çekmek ve AI destekli müşteri dönüşüm uygulaması olduğunu 
+                        vurgulamak için kullanılır.
+                    </div>
+                    <div class="logo-specs">
+                        Boyut: 60x60px<br>
+                        Format: SVG<br>
+                        Kullanım: .bottom-avatar<br>
+                        Renk: Gradient (Mavi-Mor)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="logo-section">
+            <div class="logo-title">Küçük Logo (35x35px) - Agent Avatar</div>
+            <div class="logo-display">
+                <div class="avatar-example">
+                    <div class="avatar-label">Agent Avatar</div>
+                    <div class="agent-avatar">
+                        <img src="/imgs/ai-conversion-logo-small.svg" alt="AI Conversion Agent">
+                    </div>
+                </div>
+                <div class="avatar-example">
+                    <div class="avatar-label">Large Agent Avatar</div>
+                    <div class="agent-avatar large">
+                        <img src="/imgs/ai-conversion-logo-small.svg" alt="AI Conversion Agent">
+                    </div>
+                </div>
+                <div class="logo-info">
+                    <div class="logo-description">
+                        Bu logo, chat mesajlarında AI asistanın avatar'ı olarak kullanılır. 
+                        Hem normal (35x35px) hem de büyük (37x37px) boyutlarda kullanılabilir.
+                    </div>
+                    <div class="logo-specs">
+                        Boyut: 35x35px / 37x37px<br>
+                        Format: SVG<br>
+                        Kullanım: .agent-avatar<br>
+                        Optimizasyon: Küçük boyut için basitleştirilmiş
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="features">
+            <h3>🎯 Logo Özellikleri</h3>
+            <ul>
+                <li><strong>AI Sembolizmi:</strong> Beyin devre deseni ve bağlantı noktaları ile yapay zeka vurgusu</li>
+                <li><strong>Dönüşüm Oku:</strong> Müşteri dönüşümünü temsil eden yukarı yönlü ok</li>
+                <li><strong>Modern Tasarım:</strong> Gradient arka plan ve temiz, profesyonel görünüm</li>
+                <li><strong>Responsive:</strong> SVG formatı sayesinde her boyutta net görünüm</li>
+                <li><strong>Marka Uyumu:</strong> Mevcut tasarım sistemi ile uyumlu renkler</li>
+            </ul>
+        </div>
+        
+        <div class="logo-section">
+            <div class="logo-title">CSS Kullanım Örnekleri</div>
+            <div class="usage-code">
+<span class="code-comment">/* Agent Avatar için küçük logo */</span><br>
+<span class="code-property">.agent-avatar</span> {<br>
+&nbsp;&nbsp;<span class="code-property">width:</span> <span class="code-value">35px</span>;<br>
+&nbsp;&nbsp;<span class="code-property">height:</span> <span class="code-value">35px</span>;<br>
+&nbsp;&nbsp;<span class="code-property">border-radius:</span> <span class="code-value">50%</span>;<br>
+&nbsp;&nbsp;<span class="code-property">overflow:</span> <span class="code-value">hidden</span>;<br>
+}<br><br>
+<span class="code-comment">/* Bottom Avatar için büyük logo */</span><br>
+<span class="code-property">.bottom-avatar</span> {<br>
+&nbsp;&nbsp;<span class="code-property">width:</span> <span class="code-value">60px</span>;<br>
+&nbsp;&nbsp;<span class="code-property">height:</span> <span class="code-value">60px</span>;<br>
+&nbsp;&nbsp;<span class="code-property">border-radius:</span> <span class="code-value">50%</span>;<br>
+&nbsp;&nbsp;<span class="code-property">overflow:</span> <span class="code-value">hidden</span>;<br>
+}
+            </div>
+        </div>
+        
+        <div class="logo-section">
+            <div class="logo-title">React Component Kullanımı</div>
+            <div class="usage-code">
+<span class="code-comment">// Agent Avatar</span><br>
+&lt;<span class="code-property">div</span> <span class="code-property">className</span>=<span class="code-value">"agent-avatar"</span>&gt;<br>
+&nbsp;&nbsp;&lt;<span class="code-property">img</span> <span class="code-property">src</span>=<span class="code-value">"/imgs/ai-conversion-logo-small.svg"</span> <span class="code-property">alt</span>=<span class="code-value">"AI Conversion Agent"</span> /&gt;<br>
+&lt;/<span class="code-property">div</span>&gt;<br><br>
+<span class="code-comment">// Bottom Avatar</span><br>
+&lt;<span class="code-property">div</span> <span class="code-property">className</span>=<span class="code-value">"bottom-avatar"</span> <span class="code-property">onClick</span>={onToggleChat}&gt;<br>
+&nbsp;&nbsp;&lt;<span class="code-property">img</span> <span class="code-property">src</span>=<span class="code-value">"/imgs/ai-conversion-logo.svg"</span> <span class="code-property">alt</span>=<span class="code-value">"AI Conversion Assistant"</span> /&gt;<br>
+&lt;/<span class="code-property">div</span>&gt;
+            </div>
+        </div>
+    </div>
+</body>
+</html>

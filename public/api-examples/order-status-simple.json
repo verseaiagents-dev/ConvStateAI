@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "data": {
+    "order_id": "12345",
+    "status": "kargoda",
+    "status_description": "Siparişiniz kargoya verildi",
+    "estimated_delivery": "2024-01-18",
+    "items": [
+      {
+        "product_name": "Akıllı Telefon",
+        "brand": "TechBrand",
+        "quantity": 1,
+        "total_price": 12999.99
+      }
+    ],
+    "total_amount": 13299.98,
+    "tracking_number": "MNG123456789",
+    "carrier": "MNG Kargo"
+  },
+  "message": "Sipariş bilgileri başarıyla getirildi"
+}

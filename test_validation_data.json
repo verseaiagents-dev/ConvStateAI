@@ -1,0 +1,38 @@
+[
+  {
+    "product_title": "iPhone 15 Pro",
+    "price_usd": "999",
+    "category_name": "Smartphone",
+    "brand_name": "Apple",
+    "stock_qty": "50",
+    "image_url": "https://example.com/iphone15.jpg",
+    "description": "Latest iPhone with advanced features",
+    "email": "test@example.com",
+    "website": "https://apple.com",
+    "release_date": "2024-09-15"
+  },
+  {
+    "product_title": "",
+    "price_usd": "abc",
+    "category_name": "Laptop",
+    "brand_name": "Apple",
+    "stock_qty": "-5",
+    "image_url": "invalid-url",
+    "description": "Professional laptop for developers",
+    "email": "invalid-email",
+    "website": "not-a-url",
+    "release_date": "2020-01-01"
+  },
+  {
+    "product_title": "AirPods Pro",
+    "price_usd": "249",
+    "category_name": "Headphones",
+    "brand_name": "Apple",
+    "stock_qty": "100",
+    "image_url": "https://example.com/airpods.jpg",
+    "description": "Wireless noise-canceling earbuds",
+    "email": "support@apple.com",
+    "website": "https://apple.com/airpods",
+    "release_date": "2025-12-31"
+  }
+]

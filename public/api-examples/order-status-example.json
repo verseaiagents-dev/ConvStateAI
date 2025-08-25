@@ -1,0 +1,91 @@
+{
+  "success": true,
+  "data": {
+    "order": {
+      "order_id": "ORD-2024-001234",
+      "order_number": "12345",
+      "customer_name": "Ahmet Yılmaz",
+      "order_date": "2024-01-15T10:30:00Z",
+      "status": "kargoda",
+      "status_code": "shipped",
+      "status_description": "Siparişiniz kargoya verildi",
+      "estimated_delivery": "2024-01-18",
+      "delivery_address": {
+        "street": "Atatürk Caddesi No:123",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "postal_code": "34700",
+        "country": "Türkiye"
+      },
+      "items": [
+        {
+          "product_id": "PROD-001",
+          "product_name": "Akıllı Telefon",
+          "brand": "TechBrand",
+          "model": "X1 Pro",
+          "quantity": 1,
+          "unit_price": 12999.99,
+          "total_price": 12999.99,
+          "image_url": "https://example.com/images/phone.jpg"
+        },
+        {
+          "product_id": "PROD-002",
+          "product_name": "Kılıf",
+          "brand": "TechBrand",
+          "model": "X1 Pro Kılıf",
+          "quantity": 1,
+          "unit_price": 299.99,
+          "total_price": 299.99,
+          "image_url": "https://example.com/images/case.jpg"
+        }
+      ],
+      "payment": {
+        "method": "kredi_kartı",
+        "status": "ödendi",
+        "total_amount": 13299.98,
+        "currency": "TRY",
+        "payment_date": "2024-01-15T10:25:00Z"
+      },
+      "shipping": {
+        "method": "standart_kargo",
+        "carrier": "MNG Kargo",
+        "tracking_number": "MNG123456789",
+        "shipping_date": "2024-01-16T09:00:00Z",
+        "estimated_delivery_date": "2024-01-18",
+        "shipping_cost": 29.99
+      },
+      "timeline": [
+        {
+          "date": "2024-01-15T10:30:00Z",
+          "status": "sipariş_alındı",
+          "description": "Siparişiniz başarıyla alındı",
+          "location": "Online"
+        },
+        {
+          "date": "2024-01-15T14:00:00Z",
+          "status": "hazırlanıyor",
+          "description": "Siparişiniz hazırlanıyor",
+          "location": "Depo"
+        },
+        {
+          "date": "2024-01-16T09:00:00Z",
+          "status": "kargoya_verildi",
+          "description": "Siparişiniz kargoya verildi",
+          "location": "Depo"
+        }
+      ],
+      "notes": "Siparişiniz güvenli bir şekilde paketlendi ve kargoya verildi.",
+      "support": {
+        "phone": "+90 212 123 45 67",
+        "email": "destek@example.com",
+        "live_chat": "https://example.com/chat"
+      }
+    },
+    "meta": {
+      "timestamp": "2024-01-16T10:00:00Z",
+      "api_version": "1.0",
+      "request_id": "req-123456789"
+    }
+  },
+  "message": "Sipariş bilgileri başarıyla getirildi"
+}
