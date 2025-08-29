@@ -13,6 +13,15 @@ const ProductRecommendationMessage: React.FC<ProductRecommendationMessageProps> 
   onFeedback 
 }) => {
 
+  // Debug: Products field'ını kontrol et
+  console.log('ProductRecommendationMessage: message object:', message);
+  console.log('ProductRecommendationMessage: message.products:', message.products);
+  console.log('ProductRecommendationMessage: message.data?.products:', message.data?.products);
+  
+  // Products'ı doğru şekilde extract et
+  const products = message.products || message.data?.products || [];
+  console.log('ProductRecommendationMessage: Final products array:', products);
+  console.log('ProductRecommendationMessage: Products length:', products.length);
   
   // Feedback state'i - localStorage'da saklanır
   const [feedbackGiven, setFeedbackGiven] = useState<boolean>(false);
@@ -195,10 +204,10 @@ const ProductRecommendationMessage: React.FC<ProductRecommendationMessageProps> 
         </h4>
         
         {/* Ürün kartları */}
-        {(message.products && message.products.length > 0) || (message.data && message.data.products && message.data.products.length > 0) ? (
+        {products && products.length > 0 ? (
           <div className="products-scroll-container" ref={scrollContainerRef}>
             <div className="products-wrapper">
-              {(message.products || message.data?.products || []).map((product: Product) => (
+              {products.map((product: Product) => (
                 <div key={product.id} className="product-card">
                   <div className="product-image">
                     {product.image ? (

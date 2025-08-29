@@ -10,11 +10,11 @@ class FAQ extends Model
     protected $table = 'faqs';
 
     protected $fillable = [
-        'question',
+        'title',
+        'description',
         'answer',
         'short_answer',
-        'category_id',
-        'product_id',
+        'category',
         'is_active',
         'site_id',
         'sort_order',
@@ -51,7 +51,7 @@ class FAQ extends Model
 
     public function scopeByCategory($query, $category)
     {
-        return $query->where('category_id', $category);
+        return $query->where('category', $category);
     }
 
     public function scopeOrdered($query)

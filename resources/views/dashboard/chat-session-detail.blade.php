@@ -4,19 +4,29 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold gradient-text">Chat Session Detail</h1>
-            <p class="mt-2 text-gray-400">Session ID: {{ Str::limit($session->session_id, 30) }}</p>
-        </div>
-        <div class="mt-4 sm:mt-0">
-            <a href="{{ route('dashboard.chat-sessions') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-all duration-200 hover:shadow-lg">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Back to Sessions
-            </a>
+    <!-- Chat Session Detail Header -->
+    <div class="glass-effect rounded-2xl p-8 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-glow rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        <div class="absolute bottom-0 left-0 w-40 h-40 bg-neon-purple rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        
+        <div class="relative z-10">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 class="text-4xl font-bold mb-4">
+                        <span class="gradient-text">Chat Session Detail</span>
+                    </h1>
+                    <p class="text-xl text-gray-300">
+                        Session ID: {{ Str::limit($session->session_id, 30) }}
+                    </p>
+                </div>
+                
+                <a href="{{ route('dashboard.chat-sessions') }}" class="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg text-white font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span>Back to Sessions</span>
+                </a>
+            </div>
         </div>
     </div>
 

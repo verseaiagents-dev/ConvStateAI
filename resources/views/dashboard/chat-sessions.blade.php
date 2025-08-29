@@ -1,22 +1,45 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Chat Sessions Dashboard')
+@section('title', __('dashboard.chat_sessions_dashboard'))
 
 @section('content')
 <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold gradient-text">Chat Sessions Dashboard</h1>
-            <p class="mt-2 text-gray-400">Chat session istatistikleri ve yönetimi</p>
-        </div>
-        <div class="mt-4 sm:mt-0">
-            <a href="{{ route('dashboard.chat-sessions.export') }}" class="inline-flex items-center px-4 py-2 bg-purple-glow hover:bg-purple-dark text-white font-medium rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-glow/25">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                CSV Export
-            </a>
+    <!-- Chat Sessions Dashboard Header -->
+    <div class="glass-effect rounded-2xl p-8 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-glow rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        <div class="absolute bottom-0 left-0 w-40 h-40 bg-neon-purple rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        
+        <div class="relative z-10">
+            <h1 class="text-4xl font-bold mb-4">
+                @if($projectId && $projectName)
+                    <span class="gradient-text">{{ $projectName }}  Projesi Chat Oturumları</span>
+                @else
+                    <span class="gradient-text">{{ __('dashboard.chat_sessions_dashboard') }}</span>
+                @endif
+            </h1>
+            <p class="text-xl text-gray-300 mb-6">
+                @if($projectId)
+                    {{ __('dashboard.chat_session_statistics') }}
+                @else
+                    {{ __('dashboard.chat_session_statistics') }} - Tüm chat oturumlarınızı analiz edin ve yönetin
+                @endif
+            </p>
+            <div class="flex flex-wrap gap-4">
+                @if($projectId)
+                    <a href="{{ route('dashboard.chat-sessions') }}" class="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg text-white font-semibold hover:from-gray-500 hover:to-gray-400 transition-all duration-300 transform hover:scale-105">
+                        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                        Tüm Projeler
+                    </a>
+                @endif
+                <a href="{{ route('dashboard.chat-sessions.export') }}" class="px-6 py-3 bg-gradient-to-r from-purple-glow to-neon-purple rounded-lg text-white font-semibold hover:from-purple-dark hover:to-neon-purple transition-all duration-300 transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    {{ __('dashboard.csv_export') }}
+                </a>
+            </div>
         </div>
     </div>
 
@@ -26,7 +49,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-purple-glow/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-glow/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Total Sessions</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_sessions') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white">{{ number_format($stats['overview']['total_sessions']) }}</p>
                 </div>
                 <div class="p-3 bg-purple-glow/20 rounded-full">
@@ -41,7 +64,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Active Today</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.active_today') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white">{{ number_format($stats['overview']['active_today']) }}</p>
                 </div>
                 <div class="p-3 bg-green-500/20 rounded-full">
@@ -56,7 +79,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Interactions Today</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.interactions_today') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white">{{ number_format($stats['overview']['total_interactions_today']) }}</p>
                 </div>
                 <div class="p-3 bg-blue-500/20 rounded-full">
@@ -74,7 +97,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Conversion Rate Today</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.conversion_rate_today') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white">{{ $stats['overview']['conversion_rate_today'] }}%</p>
                 </div>
                 <div class="p-3 bg-yellow-500/20 rounded-full">
@@ -89,7 +112,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Weekly Sessions</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.weekly_sessions') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white">{{ number_format($stats['trends']['weekly_sessions']) }}</p>
                 </div>
                 <div class="p-3 bg-indigo-500/20 rounded-full">
@@ -104,7 +127,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-pink-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Monthly Sessions</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.monthly_sessions') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white">{{ number_format($stats['trends']['monthly_sessions']) }}</p>
                 </div>
                 <div class="p-3 bg-pink-500/20 rounded-full">
@@ -121,7 +144,7 @@
         <!-- Intent Distribution Chart -->
         <div class="glass-effect rounded-xl border border-gray-700">
             <div class="p-6 border-b border-gray-700">
-                <h3 class="text-lg font-semibold text-white">Top Intents</h3>
+                <h3 class="text-lg font-semibold text-white">{{ __('dashboard.top_intents') }}</h3>
             </div>
             <div class="p-6">
                 <div class="chart-pie pt-4 pb-2" style="height: 300px;">
@@ -141,7 +164,7 @@
         <!-- Action Distribution Chart -->
         <div class="glass-effect rounded-xl border border-gray-700">
             <div class="p-6 border-b border-gray-700">
-                <h3 class="text-lg font-semibold text-white">Action Distribution</h3>
+                <h3 class="text-lg font-semibold text-white">{{ __('dashboard.action_distribution') }}</h3>
             </div>
             <div class="p-6">
                 <div class="chart-pie pt-4 pb-2" style="height: 300px;">
@@ -162,20 +185,20 @@
     <!-- Sessions Table -->
     <div class="glass-effect rounded-xl border border-gray-700">
         <div class="p-6 border-b border-gray-700">
-            <h3 class="text-lg font-semibold text-white">Chat Sessions</h3>
+            <h3 class="text-lg font-semibold text-white">{{ __('dashboard.chat_sessions') }}</h3>
         </div>
         <div class="p-6">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-700">
                     <thead class="bg-gray-800/50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Session ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Activity</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Daily Usage</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Total Interactions</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.session_id') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.user') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.status') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.last_activity') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.daily_usage') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_interactions') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="bg-transparent divide-y divide-gray-700">
@@ -193,17 +216,17 @@
                                         <span class="ml-3 text-sm text-white">{{ $session->user->name }}</span>
                                     </div>
                                 @else
-                                    <span class="text-gray-400 text-sm">Guest</span>
+                                    <span class="text-gray-400 text-sm">{{ __('dashboard.guest') }}</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($session->status === 'active')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                                        Active
+                                        {{ __('dashboard.active') }}
                                     </span>
                                 @elseif($session->status === 'expired')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                                        Expired
+                                        {{ __('dashboard.expired') }}
                                     </span>
                                 @else
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
@@ -215,7 +238,7 @@
                                 @if($session->last_activity)
                                     {{ $session->last_activity->diffForHumans() }}
                                 @else
-                                    <span class="text-gray-500">Never</span>
+                                    <span class="text-gray-500">{{ __('dashboard.never') }}</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -241,7 +264,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                     </svg>
-                                    View
+                                    {{ __('dashboard.view') }}
                                 </a>
                             </td>
                         </tr>

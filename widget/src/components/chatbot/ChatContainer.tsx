@@ -40,35 +40,54 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
 
   const loadWidgetCustomization = async () => {
     try {
-      // Personal token ve user ID ile API çağrısı
-      // Bu değerler config'den gelmeli veya environment variable olarak tanımlanmalı
-      const personalToken = process.env.REACT_APP_PERSONAL_TOKEN || 'your_personal_token_here';
-      const userId = process.env.REACT_APP_USER_ID || 'your_user_id_here';
-      
-      const response = await fetch('http://127.0.0.1:8000/api/widget-customization', {
-        headers: {
-          'X-Personal-Token': personalToken,
-          'X-User-ID': userId,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+      // Check if config is available
+      if (typeof window !== 'undefined' && (window as any).WIDGET_CONFIG) {
+        const config = (window as any).WIDGET_CONFIG;
+        
+        // Try to load from API first
+        try {
+          const response = await fetch((window as any).buildApiUrl('/api/widget-customization'), {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+              setWidgetCustomization({
+                ai_name: data.data.ai_name || config.DEFAULT_AI_NAME,
+                welcome_message: data.data.welcome_message || config.DEFAULT_WELCOME_MESSAGE
+              });
+              return;
+            }
+          }
+        } catch (apiError) {
+          console.log('API not available, using default values');
         }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.data) {
+        
+        // Use default values from config
         setWidgetCustomization({
-          ai_name: data.data.ai_name || 'Kadir AI',
-          welcome_message: data.data.welcome_message || 'Merhaba ben Kadir, senin dijital asistanınım. Sana nasıl yardımcı olabilirim?'
+          ai_name: config.DEFAULT_AI_NAME,
+          welcome_message: config.DEFAULT_WELCOME_MESSAGE
+        });
+      } else {
+        // Fallback to hardcoded values
+        setWidgetCustomization({
+          ai_name: 'Kadir AI',
+          welcome_message: 'Merhaba ben Kadir, senin dijital asistanınım. Sana nasıl yardımcı olabilirim?'
         });
       }
-          } catch (error) {
-        // Widget customization yüklenemedi, varsayılan değerler kullanılıyor
-      }
+    } catch (error) {
+      console.error('Widget customization error:', error);
+      // Use default values on error
+      setWidgetCustomization({
+        ai_name: 'Kadir AI',
+        welcome_message: 'Merhaba ben Kadir, senin dijital asistanınım. Sana nasıl yardımcı olabilirim?'
+      });
+    }
   };
 
   // Kampanya ile ilgili mesajları tespit et ve direkt tab 2'ye geç

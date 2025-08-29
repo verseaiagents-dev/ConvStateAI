@@ -36,16 +36,36 @@ class TestAPI extends Controller
                 return response()->json(['error' => 'Message parameter is required'], 400);
             }
             
+            // Debug log
+            Log::info('Chat request received:', [
+                'message' => $userMessage,
+                'session_id' => $sessionId
+            ]);
+            
             // 1. Intent detection yap
             $intentResult = $this->aiService->detectIntent($userMessage);
             $intent = $intentResult['intent'];
             $confidence = $intentResult['confidence'];
+            
+            // Debug log
+            Log::info('Intent detection result:', [
+                'intent' => $intent,
+                'confidence' => $confidence,
+                'userMessage' => $userMessage
+            ]);
             
             // 2. Knowledge base'de semantic search yap
             $searchResults = $this->performSemanticSearch($userMessage);
             
             // 3. Intent'e göre response oluştur
             $response = $this->generateAIResponse($intent, $userMessage, $searchResults);
+            
+            // Debug log
+            Log::info('Generated response:', [
+                'type' => $response['type'],
+                'message' => $response['message'],
+                'products_count' => count($response['data']['products'] ?? [])
+            ]);
             
             // 4. Session bilgilerini ekle
             $response['session_id'] = $sessionId ?? uniqid();
@@ -176,30 +196,51 @@ class TestAPI extends Controller
      */
     private function generateAIResponse(string $intent, string $userMessage, array $searchResults): array
     {
+        // Debug log
+        Log::info('generateAIResponse called:', [
+            'intent' => $intent,
+            'userMessage' => $userMessage,
+            'hasSearchResults' => !empty($searchResults['results'])
+        ]);
+        
         switch ($intent) {
             case 'product_search':
             case 'product_inquiry':
+            case 'oyuncak önerisi': // Oyuncak arama için
+            case 'oyuncak_önerisi': // Underscore ile de
+                Log::info('Calling generateProductSearchResponse');
                 return $this->generateProductSearchResponse($userMessage, $searchResults);
                 
+            case 'product_recommendation': // Özel case
+                Log::info('Calling generateProductRecommendationResponse');
+                return $this->generateProductRecommendationResponse($userMessage, $searchResults);
+                
             case 'category_browse':
+                Log::info('Calling generateCategoryResponse');
                 return $this->generateCategoryResponse($userMessage, $searchResults);
                 
             case 'brand_search':
+                Log::info('Calling generateBrandResponse');
                 return $this->generateBrandResponse($userMessage, $searchResults);
                 
             case 'faq_search':
+                Log::info('Calling generateFAQResponse');
                 return $this->generateFAQResponse($userMessage, $searchResults);
                 
             case 'order_tracking':
+                Log::info('Calling generateOrderTrackingResponse');
                 return $this->generateOrderTrackingResponse();
                 
             case 'greeting':
+                Log::info('Calling generateGreetingResponse');
                 return $this->generateGreetingResponse();
                 
             case 'help_request':
+                Log::info('Calling generateHelpResponse');
                 return $this->generateHelpResponse();
                 
             default:
+                Log::info('Calling generateGeneralResponse (default case)');
                 return $this->generateGeneralResponse($userMessage, $searchResults);
         }
     }
@@ -216,7 +257,56 @@ class TestAPI extends Controller
         $isPersonalizedRequest = preg_match('/(bana göre|benim için|öner|tavsiye)/i', $userMessage);
         $hasSpecificProduct = preg_match('/(saat|telefon|bilgisayar|elbise|ayakkabı|çanta|aksesuar|kozmetik|kitap|oyuncak)/i', $userMessage);
         
-        if (!empty($searchResults['results'])) {
+        // "bana oyuncak öner" gibi spesifik ürün aramaları için arama yap
+        $isSpecificProductRequest = preg_match('/(bana|benim için)\s+(oyuncak|kitap|saat|telefon|bilgisayar|elbise|ayakkabı|çanta|aksesuar|kozmetik)\s+(öner|tavsiye|bul|ara)/i', $userMessage);
+        
+        // Elektronik ürünleri listele gibi kategori aramaları için
+        $categorySearch = preg_match('/(elektronik|giyim|oyuncak|kitap|kozmetik|aksesuar|mobilya|bahçe|müzik|film)\s+(ürünleri?|listele|göster|ara)/i', $userMessage);
+        
+        if ($categorySearch) {
+            // Kategori adını çıkar
+            preg_match('/(elektronik|giyim|oyuncak|kitap|kozmetik|aksesuar|mobilya|bahçe|müzik|film)/i', $userMessage, $matches);
+            $category = strtolower($matches[1]);
+            
+            // ProductData'dan kategoriye göre ürünleri al
+            $productData = new \App\Http\Services\ProductData();
+            
+            // AI'ın kategori eşleştirmesi yapması için tüm ürünleri al ve AI'a gönder
+            $allProducts = $productData->getAllProducts();
+            
+            if (!empty($allProducts)) {
+                // AI'a kategori eşleştirmesi yaptır
+                $aiResponse = $this->aiService->generateResponse(
+                    "Sen bir e-ticaret ürün filtreleme uzmanısın. " .
+                    "Kullanıcı '{$category}' kategorisinde ürün arıyor. " .
+                    "Mevcut ürün kategorileri: " . implode(', ', array_unique(array_column($allProducts, 'category'))) . ". " .
+                    "Bu kategorideki ürünleri filtrele ve JSON formatında döndür. " .
+                    "Format: {\"products\": [{\"id\": 1, \"name\": \"Ürün Adı\", \"category\": \"Kategori\"}]}. " .
+                    "Sadece JSON döndür, başka açıklama yapma.",
+                    [], // chunks
+                    ['context' => 'product_category_search', 'products' => $allProducts]
+                );
+                
+                // AI response'dan ürünleri çıkar
+                $filteredProducts = $this->extractProductsFromAIResponse($aiResponse, $allProducts, $category);
+                
+                if (!empty($filteredProducts)) {
+                    $products = array_slice($filteredProducts, 0, 8); // En fazla 8 ürün göster
+                    $message = ucfirst($category) . " kategorisinde " . count($products) . " ürün buldum:";
+                } else {
+                    // AI eşleştirme yapamadıysa, fuzzy search yap
+                    $products = $this->fuzzyCategorySearch($allProducts, $category);
+                    if (!empty($products)) {
+                        $products = array_slice($products, 0, 8);
+                        $message = ucfirst($category) . " kategorisinde " . count($products) . " ürün buldum:";
+                    } else {
+                        $message = ucfirst($category) . " kategorisinde ürün bulamadım. Farklı bir kategori deneyin.";
+                    }
+                }
+            } else {
+                $message = "Ürün veritabanında hiç ürün bulunamadı.";
+            }
+        } elseif (!empty($searchResults['results'])) {
             // Chunk'lardan ürün bilgilerini çıkar
             foreach (array_slice($searchResults['results'], 0, 5) as $result) {
                 $product = $this->extractProductFromChunk($result);
@@ -244,14 +334,24 @@ class TestAPI extends Controller
             }
         }
         
+        // Intent'e göre type belirle
+        if ($isSpecificProductRequest) {
+            $responseType = 'product_search'; // Spesifik ürün araması
+        } elseif ($isPersonalizedRequest) {
+            $responseType = 'product_recommendation'; // Genel öneri
+        } else {
+            $responseType = 'product_search'; // Normal arama
+        }
+        
         return [
-            'type' => 'product_search',
+            'type' => $responseType,
             'message' => $message,
+            'products' => $products, // products'ı doğrudan ekle
             'data' => [
                 'products' => $products,
                 'search_query' => $userMessage,
                 'total_found' => count($products),
-                'search_confidence' => $searchResults['total_found'] > 0 ? 'high' : 'low',
+                'search_confidence' => count($products) > 0 ? 'high' : 'low',
                 'is_personalized' => $isPersonalizedRequest
             ],
             'suggestions' => [
@@ -262,6 +362,389 @@ class TestAPI extends Controller
                 'Size özel öneriler için profil bilgilerinizi güncelleyin'
             ]
         ];
+    }
+
+    /**
+     * Ürün önerisi response'u - ÖZEL
+     */
+    private function generateProductRecommendationResponse(string $userMessage, array $searchResults): array
+    {
+        $products = [];
+        $message = '';
+        
+        // Kullanıcı mesajını analiz et
+        $isPersonalizedRequest = true; // product_recommendation için her zaman true
+        $hasSpecificProduct = preg_match('/(saat|telefon|bilgisayar|elbise|ayakkabı|çanta|aksesuar|kozmetik|kitap|oyuncak|kazak|gömlek|pantolon|etek|ceket)/i', $userMessage);
+        
+        // "bana ürün öner" gibi genel öneri istekleri için rastgele ürünler öner
+        if (preg_match('/(ürün öner|ürün tavsiye|ne önerirsin|bana öner|bana tavsiye)/i', $userMessage)) {
+            $message = "Size rastgele ürün önerileri yapayım:";
+            
+            // ProductData'dan rastgele ürünler seç
+            $productData = new \App\Http\Services\ProductData();
+            $allProducts = $productData->getAllProducts();
+            
+            if (!empty($allProducts)) {
+                // Rastgele 6 ürün seç
+                shuffle($allProducts);
+                $products = array_slice($allProducts, 0, 6);
+            }
+        } else {
+            // Spesifik ürün önerisi için
+            $message = "Size özel ürün önerileri yapayım:";
+            
+            // ProductData'dan kategoriye göre ürünler seç
+            $productData = new \App\Http\Services\ProductData();
+            if ($hasSpecificProduct) {
+                // Spesifik ürün kategorisinden seç
+                preg_match('/(saat|telefon|bilgisayar|elbise|ayakkabı|çanta|aksesuar|kozmetik|kitap|oyuncak)/i', $userMessage, $matches);
+                $category = $matches[1];
+                
+                // AI'ın kategori eşleştirmesi yapması için tüm ürünleri al
+                $allProducts = $productData->getAllProducts();
+                
+                if (!empty($allProducts)) {
+                    // AI'a kategori eşleştirmesi yaptır
+                    $aiResponse = $this->aiService->generateResponse(
+                        "Sen bir e-ticaret ürün filtreleme uzmanısın. " .
+                        "Kullanıcı '{$category}' kategorisinde ürün arıyor. " .
+                        "Mevcut ürün kategorileri: " . implode(', ', array_unique(array_column($allProducts, 'category'))) . ". " .
+                        "Bu kategorideki ürünleri filtrele ve JSON formatında döndür. " .
+                        "Format: {\"products\": [{\"id\": 1, \"name\": \"Ürün Adı\", \"category\": \"Kategori\"}]}. " .
+                        "Sadece JSON döndür, başka açıklama yapma.",
+                        [], // chunks
+                        ['context' => 'product_category_search', 'products' => $allProducts]
+                    );
+                    
+                    // AI response'dan ürünleri çıkar
+                    $filteredProducts = $this->extractProductsFromAIResponse($aiResponse, $allProducts, $category);
+                    
+                    if (!empty($filteredProducts)) {
+                        $products = array_slice($filteredProducts, 0, 6); // En fazla 6 ürün
+                    } else {
+                        // AI eşleştirme yapamadıysa, fuzzy search yap
+                        $products = $this->fuzzyCategorySearch($allProducts, $category);
+                        $products = array_slice($products, 0, 6);
+                    }
+                }
+            }
+        }
+        
+        return [
+            'type' => 'product_recommendation',
+            'message' => $message,
+            'products' => $products, // products'ı doğrudan ekle
+            'data' => [
+                'products' => $products,
+                'total_found' => count($products),
+                'is_personalized' => $isPersonalizedRequest
+            ],
+            'suggestions' => [
+                'Farklı kategori seç',
+                'Fiyat aralığı belirle',
+                'Marka seç',
+                'Daha fazla ürün göster'
+            ]
+        ];
+    }
+    
+
+    
+    /**
+     * Rastgele ürünler ekler
+     */
+    private function addRandomProducts(array &$products): void
+    {
+        $allChunks = KnowledgeChunk::with('knowledgeBase')
+            ->where('content_type', 'product')
+            ->get()
+            ->toArray();
+        
+        if (!empty($allChunks)) {
+            shuffle($allChunks);
+            foreach (array_slice($allChunks, 0, 6) as $chunk) {
+                $product = $this->extractProductFromChunk($chunk);
+                if ($product && count($products) < 6) {
+                    $products[] = $product;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Mesajdan renk bilgisini çıkarır
+     */
+    private function extractColorFromMessage(string $message): ?string
+    {
+        $colors = [
+            'kırmızı' => 'kırmızı',
+            'mavi' => 'mavi',
+            'yeşil' => 'yeşil',
+            'sarı' => 'sarı',
+            'siyah' => 'siyah',
+            'beyaz' => 'beyaz',
+            'pembe' => 'pembe',
+            'mor' => 'mor',
+            'turuncu' => 'turuncu',
+            'gri' => 'gri',
+            'kahverengi' => 'kahverengi'
+        ];
+        
+        foreach ($colors as $color => $value) {
+            if (stripos($message, $color) !== false) {
+                return $value;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Ürünün belirtilen renge uyup uymadığını kontrol eder
+     */
+    private function productMatchesColor(array $product, string $searchColor): bool
+    {
+        $productName = strtolower($product['name']);
+        $productDescription = strtolower($product['description'] ?? '');
+        
+        // Ürün adında veya açıklamasında renk geçiyor mu?
+        if (stripos($productName, $searchColor) !== false || stripos($productDescription, $searchColor) !== false) {
+            return true;
+        }
+        
+        // Renk eşleştirmeleri
+        $colorMatches = [
+            'kırmızı' => ['red', 'crimson', 'scarlet'],
+            'mavi' => ['blue', 'navy', 'azure'],
+            'yeşil' => ['green', 'emerald', 'forest'],
+            'sarı' => ['yellow', 'gold', 'amber'],
+            'siyah' => ['black', 'dark', 'ebony'],
+            'beyaz' => ['white', 'ivory', 'cream'],
+            'pembe' => ['pink', 'rose', 'fuchsia'],
+            'mor' => ['purple', 'violet', 'lavender'],
+            'turuncu' => ['orange', 'tangerine', 'coral'],
+            'gri' => ['gray', 'grey', 'silver'],
+            'kahverengi' => ['brown', 'chocolate', 'tan']
+        ];
+        
+        if (isset($colorMatches[$searchColor])) {
+            foreach ($colorMatches[$searchColor] as $englishColor) {
+                if (stripos($productName, $englishColor) !== false || stripos($productDescription, $englishColor) !== false) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Mesajdan kategori bilgisini çıkarır
+     */
+    private function extractCategoryFromMessage(string $message): string
+    {
+        $categories = [
+            'elektronik' => ['elektronik', 'electronics', 'electronic', 'tech', 'technology', 'monitör', 'monitor', 'ekran', 'screen', 'tv', 'televizyon', 'bilgisayar', 'computer', 'pc', 'laptop', 'desktop', 'tablet', 'telefon', 'phone', 'mobile', 'smartphone', 'saat', 'watch', 'kamera', 'camera', 'kulaklık', 'headphone', 'hoparlör', 'speaker', 'klavye', 'keyboard', 'mouse', 'fare', 'yazıcı', 'printer', 'scanner', 'tarayıcı', 'qled', 'oled', 'led', '4k', '8k', 'hd', 'fullhd', 'ultrahd', 'gaming', 'oyun', 'game'],
+            'giyim' => ['giyim', 'clothing', 'clothes', 'fashion', 'apparel', 'wear', 'elbise', 'dress', 'gömlek', 'shirt', 'pantolon', 'pants', 'trousers', 'etek', 'skirt', 'ceket', 'jacket', 'kazak', 'sweater', 'bluz', 'blouse', 'ayakkabı', 'shoe', 'çanta', 'bag', 'şapka', 'hat', 'kemer', 'belt', 'çorap', 'sock', 'iç çamaşır', 'underwear', 'mayo', 'swimsuit', 'spor', 'sport', 'fitness', 'athletic'],
+            'oyuncak' => ['oyuncak', 'toy', 'toys', 'game', 'games', 'gaming', 'play', 'puzzle', 'yapboz', 'lego', 'bebek', 'doll', 'arabalar', 'cars', 'robot', 'robot', 'eğitici', 'educational', 'yapı', 'construction', 'sanat', 'art', 'craft', 'boyama', 'coloring', 'müzik', 'music', 'enstrüman', 'instrument'],
+            'kitap' => ['kitap', 'book', 'books', 'literature', 'reading', 'roman', 'novel', 'hikaye', 'story', 'şiir', 'poetry', 'dergi', 'magazine', 'gazete', 'newspaper', 'ansiklopedi', 'encyclopedia', 'sözlük', 'dictionary', 'atlas', 'atlas', 'çizgi roman', 'comic', 'manga', 'manga'],
+            'saat' => ['saat', 'watch', 'watches', 'clock', 'timepiece', 'kol saati', 'wristwatch', 'duvar saati', 'wall clock', 'masa saati', 'desk clock', 'çalar saat', 'alarm clock', 'akıllı saat', 'smartwatch', 'dijital', 'digital', 'analog', 'analog'],
+            'telefon' => ['telefon', 'phone', 'mobile', 'smartphone', 'cell', 'cep telefonu', 'mobile phone', 'akıllı telefon', 'smartphone', 'iphone', 'iphone', 'samsung', 'samsung', 'huawei', 'huawei', 'xiaomi', 'xiaomi', 'oppo', 'oppo', 'vivo', 'vivo'],
+            'bilgisayar' => ['bilgisayar', 'computer', 'pc', 'laptop', 'desktop', 'notebook', 'netbook', 'ultrabook', 'macbook', 'macbook', 'imac', 'imac', 'mac', 'mac', 'windows', 'windows', 'linux', 'linux', 'macos', 'macos', 'işlemci', 'processor', 'cpu', 'cpu', 'ram', 'ram', 'ssd', 'ssd', 'hdd', 'hdd', 'ekran kartı', 'graphics card', 'gpu', 'gpu'],
+            'ev' => ['ev', 'home', 'house', 'dekorasyon', 'decoration', 'interior', 'mobilya', 'furniture', 'halı', 'carpet', 'perde', 'curtain', 'lamba', 'lamp', 'mum', 'candle', 'vazo', 'vase', 'resim', 'picture', 'tablo', 'painting', 'çerçeve', 'frame', 'yastık', 'pillow', 'battaniye', 'blanket'],
+            'spor' => ['spor', 'sport', 'fitness', 'exercise', 'athletic', 'koşu', 'running', 'yürüyüş', 'walking', 'bisiklet', 'bicycle', 'yoga', 'yoga', 'pilates', 'pilates', 'ağırlık', 'weight', 'dumbbell', 'dumbbell', 'halter', 'barbell', 'top', 'ball', 'raket', 'racket', 'kayak', 'ski'],
+            'kozmetik' => ['kozmetik', 'cosmetic', 'beauty', 'makeup', 'skincare', 'makyaj', 'makeup', 'parfüm', 'perfume', 'krem', 'cream', 'losyon', 'lotion', 'şampuan', 'shampoo', 'saç', 'hair', 'cilt', 'skin', 'tırnak', 'nail', 'dudak', 'lip', 'göz', 'eye'],
+            'aksesuar' => ['aksesuar', 'accessory', 'accessories', 'jewelry', 'takı', 'jewelry', 'kolye', 'necklace', 'yüzük', 'ring', 'küpe', 'earring', 'bilezik', 'bracelet', 'saat', 'watch', 'çanta', 'bag', 'cüzdan', 'wallet', 'güneş gözlüğü', 'sunglasses', 'şal', 'scarf', 'fular', 'scarf'],
+            'mobilya' => ['mobilya', 'furniture', 'furnishings', 'furnishing', 'koltuk', 'sofa', 'sandalye', 'chair', 'masa', 'table', 'dolap', 'cabinet', 'wardrobe', 'wardrobe', 'yatak', 'bed', 'komodin', 'nightstand', 'vitrin', 'display case', 'raf', 'shelf', 'çekmece', 'drawer'],
+            'bahçe' => ['bahçe', 'garden', 'outdoor', 'yard', 'patio', 'çiçek', 'flower', 'bitki', 'plant', 'ağaç', 'tree', 'çim', 'grass', 'çit', 'fence', 'havuz', 'pool', 'şömine', 'fireplace', 'barbekü', 'barbecue', 'hamak', 'hammock', 'salıncak', 'swing'],
+            'müzik' => ['müzik', 'music', 'audio', 'sound', 'musical', 'gitar', 'guitar', 'piyano', 'piano', 'keman', 'violin', 'flüt', 'flute', 'davul', 'drum', 'bateri', 'drum set', 'mikrofon', 'microphone', 'hoparlör', 'speaker', 'kulaklık', 'headphone', 'cd', 'cd', 'vinyl', 'vinyl'],
+            'film' => ['film', 'movie', 'cinema', 'video', 'dvd', 'dvd', 'bluray', 'bluray', '4k', '4k', 'uhd', 'uhd', 'projeksiyon', 'projection', 'perde', 'screen', 'kamera', 'camera', 'video kamera', 'video camera', 'drone', 'drone']
+        ];
+        
+        $messageLower = strtolower($message);
+        
+        // Önce tam eşleşme ara
+        foreach ($categories as $category => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (stripos($messageLower, $keyword) !== false) {
+                    return $category;
+                }
+            }
+        }
+        
+        // Eğer hiçbir kategori bulunamazsa, mesaj içeriğine göre tahmin et
+        if (preg_match('/(monitör|monitor|ekran|screen|tv|televizyon|bilgisayar|computer|pc|laptop|desktop|tablet|telefon|phone|mobile|smartphone|saat|watch|kamera|camera|kulaklık|headphone|hoparlör|speaker|klavye|keyboard|mouse|fare|yazıcı|printer|scanner|tarayıcı|qled|oled|led|4k|8k|hd|fullhd|ultrahd|gaming|oyun|game)/i', $messageLower)) {
+            return 'elektronik';
+        }
+        
+        if (preg_match('/(elbise|dress|gömlek|shirt|pantolon|pants|trousers|etek|skirt|ceket|jacket|kazak|sweater|bluz|blouse|ayakkabı|shoe|çanta|bag|şapka|hat|kemer|belt|çorap|sock|iç çamaşır|underwear|mayo|swimsuit)/i', $messageLower)) {
+            return 'giyim';
+        }
+        
+        if (preg_match('/(oyuncak|toy|toys|game|games|gaming|play|puzzle|yapboz|lego|bebek|doll|arabalar|cars|robot|robot|eğitici|educational|yapı|construction|sanat|art|craft|boyama|coloring)/i', $messageLower)) {
+            return 'oyuncak';
+        }
+        
+        if (preg_match('/(kitap|book|books|literature|reading|roman|novel|hikaye|story|şiir|poetry|dergi|magazine|gazete|newspaper|ansiklopedi|encyclopedia|sözlük|dictionary|atlas|atlas|çizgi roman|comic|manga|manga)/i', $messageLower)) {
+            return 'kitap';
+        }
+        
+        if (preg_match('/(saat|watch|watches|clock|timepiece|kol saati|wristwatch|duvar saati|wall clock|masa saati|desk clock|çalar saat|alarm clock|akıllı saat|smartwatch)/i', $messageLower)) {
+            return 'saat';
+        }
+        
+        if (preg_match('/(telefon|phone|mobile|smartphone|cell|cep telefonu|mobile phone|akıllı telefon|smartphone|iphone|iphone|samsung|samsung|huawei|huawei|xiaomi|xiaomi|oppo|oppo|vivo|vivo)/i', $messageLower)) {
+            return 'telefon';
+        }
+        
+        if (preg_match('/(bilgisayar|computer|pc|laptop|desktop|notebook|netbook|ultrabook|macbook|macbook|imac|imac|mac|mac|windows|windows|linux|linux|macos|macos|işlemci|processor|cpu|cpu|ram|ram|ssd|ssd|hdd|hdd|ekran kartı|graphics card|gpu|gpu)/i', $messageLower)) {
+            return 'bilgisayar';
+        }
+        
+        if (preg_match('/(ev|home|house|dekorasyon|decoration|interior|mobilya|furniture|halı|carpet|perde|curtain|lamba|lamp|mum|candle|vazo|vase|resim|picture|tablo|painting|çerçeve|frame|yastık|pillow|battaniye|blanket)/i', $messageLower)) {
+            return 'ev';
+        }
+        
+        if (preg_match('/(spor|sport|fitness|exercise|athletic|koşu|running|yürüyüş|walking|bisiklet|bicycle|yoga|yoga|pilates|pilates|ağırlık|weight|dumbbell|dumbbell|halter|barbell|top|ball|raket|racket|kayak|ski)/i', $messageLower)) {
+            return 'spor';
+        }
+        
+        if (preg_match('/(kozmetik|cosmetic|beauty|makeup|skincare|makyaj|makeup|parfüm|perfume|krem|cream|losyon|lotion|şampuan|shampoo|saç|hair|cilt|skin|tırnak|nail|dudak|lip|göz|eye)/i', $messageLower)) {
+            return 'kozmetik';
+        }
+        
+        if (preg_match('/(aksesuar|accessory|accessories|jewelry|takı|jewelry|kolye|necklace|yüzük|ring|küpe|earring|bilezik|bracelet|saat|watch|çanta|bag|cüzdan|wallet|güneş gözlüğü|sunglasses|şal|scarf|fular|scarf)/i', $messageLower)) {
+            return 'aksesuar';
+        }
+        
+        if (preg_match('/(mobilya|furniture|furnishings|furnishing|koltuk|sofa|sandalye|chair|masa|table|dolap|cabinet|wardrobe|wardrobe|yatak|bed|komodin|nightstand|vitrin|display case|raf|shelf|çekmece|drawer)/i', $messageLower)) {
+            return 'mobilya';
+        }
+        
+        if (preg_match('/(bahçe|garden|outdoor|yard|patio|çiçek|flower|bitki|plant|ağaç|tree|çim|grass|çit|fence|havuz|pool|şömine|fireplace|barbekü|barbecue|hamak|hammock|salıncak|swing)/i', $messageLower)) {
+            return 'bahçe';
+        }
+        
+        if (preg_match('/(müzik|music|audio|sound|musical|gitar|guitar|piyano|piano|keman|violin|flüt|flute|davul|drum|bateri|drum set|mikrofon|microphone|hoparlör|speaker|kulaklık|headphone|cd|cd|vinyl|vinyl)/i', $messageLower)) {
+            return 'müzik';
+        }
+        
+        if (preg_match('/(film|movie|cinema|video|dvd|dvd|bluray|bluray|4k|4k|uhd|uhd|projeksiyon|projection|perde|screen|kamera|camera|video kamera|video camera|drone|drone)/i', $messageLower)) {
+            return 'film';
+        }
+        
+        // Hiçbir kategori bulunamazsa genel kategori döndür
+        return 'genel';
+    }
+    
+    /**
+     * Ürünün belirtilen kategoriye uyup uymadığını kontrol eder
+     */
+    private function productMatchesCategory(array $product, string $searchCategory): bool
+    {
+        // Kategori belirtilmemişse veya genel ise tüm ürünleri göster
+        if (empty($searchCategory) || $searchCategory === 'genel') {
+            return true;
+        }
+        
+        $productCategory = strtolower($product['category'] ?? '');
+        $productName = strtolower($product['name'] ?? '');
+        $productDescription = strtolower($product['description'] ?? '');
+        
+        // Kategori eşleştirmeleri - daha kapsamlı
+        $categoryMatches = [
+            'elektronik' => ['electronics', 'electronic', 'tech', 'technology', 'gadget', 'monitör', 'monitor', 'ekran', 'screen', 'tv', 'televizyon', 'bilgisayar', 'computer', 'pc', 'laptop', 'desktop', 'tablet', 'telefon', 'phone', 'mobile', 'smartphone', 'saat', 'watch', 'kamera', 'camera', 'kulaklık', 'headphone', 'hoparlör', 'speaker', 'klavye', 'keyboard', 'mouse', 'fare', 'yazıcı', 'printer', 'scanner', 'tarayıcı', 'qled', 'oled', 'led', '4k', '8k', 'hd', 'fullhd', 'ultrahd', 'gaming', 'oyun', 'game'],
+            'giyim' => ['clothing', 'clothes', 'fashion', 'apparel', 'wear', 'elbise', 'dress', 'gömlek', 'shirt', 'pantolon', 'pants', 'trousers', 'etek', 'skirt', 'ceket', 'jacket', 'kazak', 'sweater', 'bluz', 'blouse', 'ayakkabı', 'shoe', 'çanta', 'bag', 'şapka', 'hat', 'kemer', 'belt', 'çorap', 'sock', 'iç çamaşır', 'underwear', 'mayo', 'swimsuit', 'spor', 'sport', 'fitness', 'athletic'],
+            'oyuncak' => ['toy', 'toys', 'game', 'games', 'gaming', 'play', 'puzzle', 'yapboz', 'lego', 'bebek', 'doll', 'arabalar', 'cars', 'robot', 'robot', 'eğitici', 'educational', 'yapı', 'construction', 'sanat', 'art', 'craft', 'boyama', 'coloring', 'müzik', 'music', 'enstrüman', 'instrument'],
+            'kitap' => ['book', 'books', 'literature', 'reading', 'roman', 'novel', 'hikaye', 'story', 'şiir', 'poetry', 'dergi', 'magazine', 'gazete', 'newspaper', 'ansiklopedi', 'encyclopedia', 'sözlük', 'dictionary', 'atlas', 'atlas', 'çizgi roman', 'comic', 'manga', 'manga'],
+            'saat' => ['watch', 'watches', 'clock', 'timepiece', 'kol saati', 'wristwatch', 'duvar saati', 'wall clock', 'masa saati', 'desk clock', 'çalar saat', 'alarm clock', 'akıllı saat', 'smartwatch', 'dijital', 'digital', 'analog', 'analog'],
+            'telefon' => ['phone', 'mobile', 'smartphone', 'cell', 'cep telefonu', 'mobile phone', 'akıllı telefon', 'smartphone', 'iphone', 'iphone', 'samsung', 'samsung', 'huawei', 'huawei', 'xiaomi', 'xiaomi', 'oppo', 'oppo', 'vivo', 'vivo'],
+            'bilgisayar' => ['computer', 'pc', 'laptop', 'desktop', 'notebook', 'netbook', 'ultrabook', 'macbook', 'macbook', 'imac', 'imac', 'mac', 'mac', 'windows', 'windows', 'linux', 'linux', 'macos', 'macos', 'işlemci', 'processor', 'cpu', 'cpu', 'ram', 'ram', 'ssd', 'ssd', 'hdd', 'hdd', 'ekran kartı', 'graphics card', 'gpu', 'gpu'],
+            'ev' => ['home', 'house', 'dekorasyon', 'decoration', 'interior', 'mobilya', 'furniture', 'halı', 'carpet', 'perde', 'curtain', 'lamba', 'lamp', 'mum', 'candle', 'vazo', 'vase', 'resim', 'picture', 'tablo', 'painting', 'çerçeve', 'frame', 'yastık', 'pillow', 'battaniye', 'blanket'],
+            'spor' => ['sport', 'fitness', 'exercise', 'athletic', 'koşu', 'running', 'yürüyüş', 'walking', 'bisiklet', 'bicycle', 'yoga', 'yoga', 'pilates', 'pilates', 'ağırlık', 'weight', 'dumbbell', 'dumbbell', 'halter', 'barbell', 'top', 'ball', 'raket', 'racket', 'kayak', 'ski'],
+            'kozmetik' => ['cosmetic', 'beauty', 'makeup', 'skincare', 'makyaj', 'makeup', 'parfüm', 'perfume', 'krem', 'cream', 'losyon', 'lotion', 'şampuan', 'shampoo', 'saç', 'hair', 'cilt', 'skin', 'tırnak', 'nail', 'dudak', 'lip', 'göz', 'eye'],
+            'aksesuar' => ['accessory', 'accessories', 'jewelry', 'takı', 'jewelry', 'kolye', 'necklace', 'yüzük', 'ring', 'küpe', 'earring', 'bilezik', 'bracelet', 'saat', 'watch', 'çanta', 'bag', 'cüzdan', 'wallet', 'güneş gözlüğü', 'sunglasses', 'şal', 'scarf', 'fular', 'scarf'],
+            'mobilya' => ['furniture', 'furnishings', 'furnishing', 'koltuk', 'sofa', 'sandalye', 'chair', 'masa', 'table', 'dolap', 'cabinet', 'wardrobe', 'wardrobe', 'yatak', 'bed', 'komodin', 'nightstand', 'vitrin', 'display case', 'raf', 'shelf', 'çekmece', 'drawer'],
+            'bahçe' => ['garden', 'outdoor', 'yard', 'patio', 'çiçek', 'flower', 'bitki', 'plant', 'ağaç', 'tree', 'çim', 'grass', 'çit', 'fence', 'havuz', 'pool', 'şömine', 'fireplace', 'barbekü', 'barbecue', 'hamak', 'hammock', 'salıncak', 'swing'],
+            'müzik' => ['music', 'audio', 'sound', 'musical', 'gitar', 'guitar', 'piyano', 'piano', 'keman', 'violin', 'flüt', 'flute', 'davul', 'drum', 'bateri', 'drum set', 'mikrofon', 'microphone', 'hoparlör', 'speaker', 'kulaklık', 'headphone', 'cd', 'cd', 'vinyl', 'vinyl'],
+            'film' => ['movie', 'cinema', 'video', 'dvd', 'dvd', 'bluray', 'bluray', '4k', '4k', 'uhd', 'uhd', 'projeksiyon', 'projection', 'perde', 'screen', 'kamera', 'camera', 'video kamera', 'video camera', 'drone', 'drone']
+        ];
+        
+        // Tam kategori eşleşmesi
+        if (stripos($productCategory, $searchCategory) !== false) {
+            return true;
+        }
+        
+        // Kategori anahtar kelimeleri ile eşleşme
+        if (isset($categoryMatches[$searchCategory])) {
+            foreach ($categoryMatches[$searchCategory] as $keyword) {
+                if (stripos($productCategory, $keyword) !== false || 
+                    stripos($productName, $keyword) !== false || 
+                    stripos($productDescription, $keyword) !== false) {
+                    return true;
+                }
+            }
+        }
+        
+        // Ürün adı ve açıklamasında kategori anahtar kelimelerini ara
+        $searchKeywords = [];
+        switch ($searchCategory) {
+            case 'elektronik':
+                $searchKeywords = ['monitör', 'monitor', 'ekran', 'screen', 'tv', 'televizyon', 'bilgisayar', 'computer', 'pc', 'laptop', 'desktop', 'tablet', 'telefon', 'phone', 'mobile', 'smartphone', 'saat', 'watch', 'kamera', 'camera', 'kulaklık', 'headphone', 'hoparlör', 'speaker', 'klavye', 'keyboard', 'mouse', 'fare', 'yazıcı', 'printer', 'scanner', 'tarayıcı', 'qled', 'oled', 'led', '4k', '8k', 'hd', 'fullhd', 'ultrahd', 'gaming', 'oyun', 'game'];
+                break;
+            case 'giyim':
+                $searchKeywords = ['elbise', 'dress', 'gömlek', 'shirt', 'pantolon', 'pants', 'trousers', 'etek', 'skirt', 'ceket', 'jacket', 'kazak', 'sweater', 'bluz', 'blouse', 'ayakkabı', 'shoe', 'çanta', 'bag', 'şapka', 'hat', 'kemer', 'belt', 'çorap', 'sock', 'iç çamaşır', 'underwear', 'mayo', 'swimsuit'];
+                break;
+            case 'oyuncak':
+                $searchKeywords = ['oyuncak', 'toy', 'toys', 'game', 'games', 'gaming', 'play', 'puzzle', 'yapboz', 'lego', 'bebek', 'doll', 'arabalar', 'cars', 'robot', 'robot', 'eğitici', 'educational', 'yapı', 'construction', 'sanat', 'art', 'craft', 'boyama', 'coloring'];
+                break;
+            case 'kitap':
+                $searchKeywords = ['kitap', 'book', 'books', 'literature', 'reading', 'roman', 'novel', 'hikaye', 'story', 'şiir', 'poetry', 'dergi', 'magazine', 'gazete', 'newspaper', 'ansiklopedi', 'encyclopedia', 'sözlük', 'dictionary', 'atlas', 'atlas', 'çizgi roman', 'comic', 'manga', 'manga'];
+                break;
+            case 'saat':
+                $searchKeywords = ['saat', 'watch', 'watches', 'clock', 'timepiece', 'kol saati', 'wristwatch', 'duvar saati', 'wall clock', 'masa saati', 'desk clock', 'çalar saat', 'alarm clock', 'akıllı saat', 'smartwatch', 'dijital', 'digital', 'analog', 'analog'];
+                break;
+            case 'telefon':
+                $searchKeywords = ['telefon', 'phone', 'mobile', 'smartphone', 'cell', 'cep telefonu', 'mobile phone', 'akıllı telefon', 'smartphone', 'iphone', 'iphone', 'samsung', 'samsung', 'huawei', 'huawei', 'xiaomi', 'xiaomi', 'oppo', 'oppo', 'vivo', 'vivo'];
+                break;
+            case 'bilgisayar':
+                $searchKeywords = ['bilgisayar', 'computer', 'pc', 'laptop', 'desktop', 'notebook', 'netbook', 'ultrabook', 'macbook', 'macbook', 'imac', 'imac', 'mac', 'mac', 'windows', 'windows', 'linux', 'linux', 'macos', 'macos', 'işlemci', 'processor', 'cpu', 'cpu', 'ram', 'ram', 'ssd', 'ssd', 'hdd', 'hdd', 'ekran kartı', 'graphics card', 'gpu', 'gpu'];
+                break;
+            case 'ev':
+                $searchKeywords = ['ev', 'home', 'house', 'dekorasyon', 'decoration', 'interior', 'mobilya', 'furniture', 'halı', 'carpet', 'perde', 'curtain', 'lamba', 'lamp', 'mum', 'candle', 'vazo', 'vase', 'resim', 'picture', 'tablo', 'painting', 'çerçeve', 'frame', 'yastık', 'pillow', 'battaniye', 'blanket'];
+                break;
+            case 'spor':
+                $searchKeywords = ['spor', 'sport', 'fitness', 'exercise', 'athletic', 'koşu', 'running', 'yürüyüş', 'walking', 'bisiklet', 'bicycle', 'yoga', 'yoga', 'pilates', 'pilates', 'ağırlık', 'weight', 'dumbbell', 'dumbbell', 'halter', 'barbell', 'top', 'ball', 'raket', 'racket', 'kayak', 'ski'];
+                break;
+            case 'kozmetik':
+                $searchKeywords = ['kozmetik', 'cosmetic', 'beauty', 'makeup', 'skincare', 'makyaj', 'makeup', 'parfüm', 'perfume', 'krem', 'cream', 'losyon', 'lotion', 'şampuan', 'shampoo', 'saç', 'hair', 'cilt', 'skin', 'tırnak', 'nail', 'dudak', 'lip', 'göz', 'eye'];
+                break;
+            case 'aksesuar':
+                $searchKeywords = ['aksesuar', 'accessory', 'accessories', 'jewelry', 'takı', 'jewelry', 'kolye', 'necklace', 'yüzük', 'ring', 'küpe', 'earring', 'bilezik', 'bracelet', 'saat', 'watch', 'çanta', 'bag', 'cüzdan', 'wallet', 'güneş gözlüğü', 'sunglasses', 'şal', 'scarf', 'fular', 'scarf'];
+                break;
+            case 'mobilya':
+                $searchKeywords = ['mobilya', 'furniture', 'furnishings', 'furnishing', 'koltuk', 'sofa', 'sandalye', 'chair', 'masa', 'table', 'dolap', 'cabinet', 'wardrobe', 'wardrobe', 'yatak', 'bed', 'komodin', 'nightstand', 'vitrin', 'display case', 'raf', 'shelf', 'çekmece', 'drawer'];
+                break;
+            case 'bahçe':
+                $searchKeywords = ['bahçe', 'garden', 'outdoor', 'yard', 'patio', 'çiçek', 'flower', 'bitki', 'plant', 'ağaç', 'tree', 'çim', 'grass', 'çit', 'fence', 'havuz', 'pool', 'şömine', 'fireplace', 'barbekü', 'barbecue', 'hamak', 'hammock', 'salıncak', 'swing'];
+                break;
+            case 'müzik':
+                $searchKeywords = ['müzik', 'music', 'audio', 'sound', 'musical', 'gitar', 'guitar', 'piyano', 'piano', 'keman', 'violin', 'flüt', 'flute', 'davul', 'drum', 'bateri', 'drum set', 'mikrofon', 'microphone', 'hoparlör', 'speaker', 'kulaklık', 'headphone', 'cd', 'cd', 'vinyl', 'vinyl'];
+                break;
+            case 'film':
+                $searchKeywords = ['film', 'movie', 'cinema', 'video', 'dvd', 'dvd', 'bluray', 'bluray', '4k', '4k', 'uhd', 'uhd', 'projeksiyon', 'projection', 'perde', 'screen', 'kamera', 'camera', 'video kamera', 'video camera', 'drone', 'drone'];
+                break;
+        }
+        
+        // Ürün adı ve açıklamasında kategori anahtar kelimelerini ara
+        foreach ($searchKeywords as $keyword) {
+            if (stripos($productName, $keyword) !== false || 
+                stripos($productDescription, $keyword) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -329,30 +812,59 @@ class TestAPI extends Controller
      */
     private function generateCategoryResponse(string $userMessage, array $searchResults): array
     {
-        $categories = [];
+        $products = [];
+        $categoryName = $this->extractCategoryFromMessage($userMessage);
         
         if (!empty($searchResults['results'])) {
             foreach ($searchResults['results'] as $result) {
-                $metadata = $result['metadata'] ?? [];
-                if (isset($metadata['product_category'])) {
-                    $categories[] = $metadata['product_category'];
+                if (($result['content_type'] ?? '') === 'product') {
+                    $product = $this->extractProductFromChunk($result);
+                    if ($product && $this->productMatchesCategory($product, $categoryName)) {
+                        $products[] = $product;
+                    }
                 }
             }
-            $categories = array_unique($categories);
+        }
+        
+        // Eğer search results'da ürün bulunamazsa, tüm ürünlerden kategoriye göre filtrele
+        if (empty($products) && $categoryName) {
+            $allChunks = KnowledgeChunk::with('knowledgeBase')
+                ->where('content_type', 'product')
+                ->get()
+                ->toArray();
+            
+            foreach ($allChunks as $chunk) {
+                $product = $this->extractProductFromChunk($chunk);
+                if ($product && $this->productMatchesCategory($product, $categoryName)) {
+                    $products[] = $product;
+                }
+            }
+        }
+        
+        $message = '';
+        if (!empty($products)) {
+            $message = $categoryName 
+                ? "{$categoryName} kategorisinde " . count($products) . " ürün buldum:"
+                : "Kategoriye göre " . count($products) . " ürün buldum:";
+        } else {
+            $message = $categoryName 
+                ? "{$categoryName} kategorisinde ürün bulunamadı."
+                : "Kategoriye göre ürün bulunamadı.";
         }
         
         return [
             'type' => 'category_browse',
-            'message' => !empty($categories) 
-                ? "Bulunan kategoriler: " . implode(', ', $categories)
-                : "Kategori bulunamadı.",
+            'message' => $message,
             'data' => [
-                'categories' => $categories,
-                'total_categories' => count($categories)
+                'products' => $products,
+                'category' => $categoryName,
+                'total_products' => count($products),
+                'search_query' => $userMessage
             ],
             'suggestions' => [
-                'Ürünleri göster',
-                'Farklı kategori ara',
+                'Farklı kategori dene',
+                'Fiyat aralığı belirle',
+                'Marka seç',
                 'Ana sayfaya dön'
             ]
         ];
@@ -664,7 +1176,7 @@ class TestAPI extends Controller
             // Validate request
             $validated = $request->validate([
                 'session_id' => 'required|string',
-                'product_id' => 'required|integer|exists:products,id',
+                'product_id' => 'required|integer', // products tablosu henüz yok, validation'ı kaldır
                 'action' => 'required|string|in:view,compare,add_to_cart,buy',
                 'timestamp' => 'required|date',
                 'source' => 'required|string|in:chat_widget,product_page,checkout',
@@ -1713,6 +2225,104 @@ class TestAPI extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * AI response'dan ürünleri çıkarır
+     */
+    private function extractProductsFromAIResponse(string $aiResponse, array $allProducts, string $searchCategory): array
+    {
+        try {
+            // AI response'u JSON olarak parse etmeye çalış
+            $decoded = json_decode($aiResponse, true);
+            
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                // JSON başarıyla parse edildi, ürün ID'lerini çıkar
+                $productIds = [];
+                if (isset($decoded['products'])) {
+                    foreach ($decoded['products'] as $product) {
+                        if (isset($product['id'])) {
+                            $productIds[] = $product['id'];
+                        }
+                    }
+                }
+                
+                // ID'lere göre ürünleri filtrele
+                if (!empty($productIds)) {
+                    return array_filter($allProducts, function($product) use ($productIds) {
+                        return in_array($product['id'], $productIds);
+                    });
+                }
+            }
+            
+            // JSON parse edilemediyse, AI response'da ürün adlarını ara
+            $filteredProducts = [];
+            foreach ($allProducts as $product) {
+                if (stripos($aiResponse, $product['name']) !== false || 
+                    stripos($aiResponse, $product['category']) !== false) {
+                    $filteredProducts[] = $product;
+                }
+            }
+            
+            return $filteredProducts;
+            
+        } catch (\Exception $e) {
+            Log::warning('AI response parsing failed, using fallback', ['error' => $e->getMessage()]);
+            return [];
+        }
+    }
+    
+    /**
+     * Fuzzy kategori araması yapar
+     */
+    private function fuzzyCategorySearch(array $allProducts, string $searchCategory): array
+    {
+        $filteredProducts = [];
+        $searchCategory = strtolower($searchCategory);
+        
+        foreach ($allProducts as $product) {
+            $productCategory = strtolower($product['category']);
+            $productName = strtolower($product['name']);
+            
+            // Kategori eşleşmesi
+            if (stripos($productCategory, $searchCategory) !== false) {
+                $filteredProducts[] = $product;
+                continue;
+            }
+            
+            // Ürün adında kategori anahtar kelimeleri ara
+            $categoryKeywords = $this->getCategoryKeywords($searchCategory);
+            foreach ($categoryKeywords as $keyword) {
+                if (stripos($productName, $keyword) !== false || 
+                    stripos($productCategory, $keyword) !== false) {
+                    $filteredProducts[] = $product;
+                    break;
+                }
+            }
+        }
+        
+        return $filteredProducts;
+    }
+    
+    /**
+     * Kategori için anahtar kelimeleri döndürür
+     */
+    private function getCategoryKeywords(string $category): array
+    {
+        $keywords = [
+            'elektronik' => ['telefon', 'bilgisayar', 'tablet', 'tv', 'televizyon', 'kulaklık', 'kamera', 'monitör', 'ekran', 'laptop', 'pc', 'oyun', 'konsol'],
+            'giyim' => ['elbise', 'pantolon', 'gömlek', 'ayakkabı', 'çanta', 'ceket', 'etek', 'tshirt', 'hırka', 'kazak', 'şort', 'eşofman'],
+            'oyuncak' => ['oyuncak', 'oyun', 'lego', 'bebek', 'puzzle', 'yapboz', 'robot', 'arabalar'],
+            'kitap' => ['kitap', 'roman', 'hikaye', 'şiir', 'dergi', 'gazete', 'ansiklopedi'],
+            'kozmetik' => ['kozmetik', 'makyaj', 'cilt', 'saç', 'parfüm', 'ruj', 'fondöten', 'şampuan', 'krem'],
+            'aksesuar' => ['aksesuar', 'takı', 'saat', 'güneş gözlüğü', 'kolye', 'yüzük', 'küpe'],
+            'mobilya' => ['mobilya', 'koltuk', 'masa', 'sandalye', 'dolap', 'yatak', 'komodin'],
+            'bahçe' => ['bahçe', 'çiçek', 'bitki', 'ağaç', 'çim', 'havuz', 'şömine'],
+            'müzik' => ['müzik', 'gitar', 'piyano', 'keman', 'flüt', 'davul', 'mikrofon'],
+            'film' => ['film', 'dvd', 'bluray', '4k', 'uhd', 'projeksiyon']
+        ];
+        
+        return $keywords[$category] ?? [];
     }
 }
 

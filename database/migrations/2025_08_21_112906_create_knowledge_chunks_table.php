@@ -21,6 +21,9 @@ return new class extends Migration
             $table->string('entity_type', 100)->nullable(); // products, categories, brands, etc.
             $table->unsignedBigInteger('entity_id')->nullable();
             $table->json('metadata')->nullable(); // {table_name, field_names, record_id, etc.}
+            $table->text('image_vision')->nullable();
+            $table->boolean('has_images')->default(false);
+            $table->integer('processed_images')->default(0);
             $table->json('embedding_vector')->nullable(); // AI embedding vector
             $table->string('vector_id', 255)->nullable(); // External vector DB ID
             $table->integer('chunk_size'); // karakter sayısı

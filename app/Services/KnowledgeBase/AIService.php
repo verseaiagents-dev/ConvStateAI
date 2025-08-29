@@ -10,7 +10,7 @@ class AIService
 {
     private $apiKey;
     private $baseUrl = 'https://api.openai.com/v1';
-    private $model = 'gpt-3.5-turbo';
+    private $model = 'gpt-4o-mini';
     private $embeddingModel = 'text-embedding-ada-002';
 
     public function __construct()
@@ -82,6 +82,8 @@ class AIService
     public function detectIntent(string $query, array $context = []): array
     {
         try {
+            Log::info('detectIntent called with:', ['query' => $query, 'context' => $context]);
+            
             $systemPrompt = $this->buildIntentDetectionPrompt($context);
             
             $response = Http::withHeaders([
@@ -104,6 +106,8 @@ class AIService
             $data = $response->json();
             $intent = $this->parseIntentResponse($data['choices'][0]['message']['content']);
             
+            Log::info('OpenAI intent detection result:', $intent);
+            
             return [
                 'intent' => $intent['intent'],
                 'confidence' => $intent['confidence'],
@@ -112,13 +116,62 @@ class AIService
             ];
         } catch (\Exception $e) {
             Log::error('OpenAI intent detection error: ' . $e->getMessage());
-            return [
-                'intent' => 'unknown',
-                'confidence' => 0.0,
-                'entities' => [],
-                'category' => 'general'
-            ];
+            Log::info('Falling back to pattern-based intent detection');
+            
+            // Fallback to local AI logic
+            return $this->fallbackIntentDetection($query);
         }
+    }
+
+    /**
+     * Fallback intent detection using pattern matching
+     */
+    private function fallbackIntentDetection(string $query): array
+    {
+        Log::info('Fallback intent detection called with query:', ['query' => $query]);
+        
+        $intent = 'unknown';
+        $confidence = 0.5;
+        
+        // "Ürün öner", "ürün tavsiye" gibi spesifik öneri ifadeleri - ÖNCELİKLİ
+        if (preg_match('/(ürün öner|ürün tavsiye|ürün önerisi|ürün tavsiyesi|ne önerirsin|bana öner|bana tavsiye|öneri|tavsiye|öner|tavsiye)/i', $query)) {
+            $intent = 'product_recommendation';
+            $confidence = 0.95;
+            Log::info('Intent detected as product_recommendation from pattern 1');
+        }
+        // Spesifik ürün arama (renk + ürün, marka + ürün gibi)
+        elseif (preg_match('/(kırmızı|mavi|yeşil|sarı|siyah|beyaz|pembe|mor|turuncu|gri|kahverengi)\s+(kazak|gömlek|pantolon|etek|ceket|ayakkabı|çanta|şapka|saat|telefon|bilgisayar|oyuncak|kitap)/i', $query)) {
+            $intent = 'product_search';
+            $confidence = 0.9;
+            Log::info('Intent detected as product_search from color+product pattern');
+        }
+        // Marka + ürün arama
+        elseif (preg_match('/(nike|adidas|apple|samsung|sony|canon|hp|dell|lenovo|asus|acer|lg|philips|bosch|siemens)\s+(saat|telefon|bilgisayar|ayakkabı|çanta|giyim)/i', $query)) {
+            $intent = 'product_search';
+            $confidence = 0.9;
+            Log::info('Intent detected as product_search from brand+product pattern');
+        }
+        // Saat, telefon, ürün arama gibi spesifik ürün sorguları
+        elseif (preg_match('/(saat|telefon|ürün|elbise|ayakkabı|bilgisayar|kitap|mobilya|elektronik|giyim|aksesuar|kozmetik|spor|ev|bahçe|oyuncak|kitap|müzik|film|oyun)/i', $query)) {
+            $intent = 'product_search';
+            $confidence = 0.85;
+            Log::info('Intent detected as product_search from specific product pattern');
+        }
+        // "Bana göre", "bul", "ara" gibi genel arama ifadeleri
+        elseif (preg_match('/(bana göre|bul|ara|göster|listele|var mı|mevcut)/i', $query)) {
+            $intent = 'product_search';
+            $confidence = 0.8;
+            Log::info('Intent detected as product_search from general search pattern');
+        }
+        
+        Log::info('Final fallback intent detection result:', ['intent' => $intent, 'confidence' => $confidence]);
+        
+        return [
+            'intent' => $intent,
+            'confidence' => $confidence,
+            'entities' => [],
+            'category' => 'general'
+        ];
     }
 
     /**
@@ -224,13 +277,19 @@ class AIService
         Intent Categories ve Örnekler:
         
         - product_search: Ürün arama, bulma, listeleme
-          Örnekler: 'saat varmı', 'telefon bul', 'kırmızı elbise', 'bana göre ürün', 'ne önerirsin'
+          Örnekler: 'saat varmı', 'telefon bul', 'kırmızı elbise', 'mavi kazak', 'nike ayakkabı'
+        
+        - product_recommendation: Ürün önerisi, tavsiye
+          Örnekler: 'ürün öner', 'ürün tavsiye', 'ne önerirsin', 'bana öner', 'bana tavsiye'
+        
+        - product_search: Ürün arama, bulma, listeleme
+          Örnekler: 'saat varmı', 'telefon bul', 'kırmızı elbise', 'mavi kazak', 'nike ayakkabı', 'oyuncak bul', 'kitap ara'
         
         - product_info: Ürün bilgisi, detay, özellik
           Örnekler: 'bu ürünün özellikleri', 'fiyatı ne kadar', 'garanti süresi'
         
         - category_browse: Kategori keşfi, filtreleme
-          Örnekler: 'elektronik kategorisi', 'giyim ürünleri', 'ev dekorasyonu'
+          Örnekler: 'elektronik kategorisi', 'giyim ürünleri', 'ev dekorasyonu', 'elektronik listele', 'giyim listele', 'oyuncak listele', 'kitap listele', 'saat listele', 'telefon listele'
         
         - brand_search: Marka arama, marka bilgisi
           Örnekler: 'Apple ürünleri', 'Nike markası', 'Samsung telefonlar'
@@ -249,7 +308,11 @@ class AIService
         
         - unknown: Belirlenemeyen intent
 
-        ÖNEMLİ: 'Bana göre saat varmı?' gibi sorgular product_search intent'ine aittir çünkü kullanıcı ürün arıyor.
+        ÖNEMLİ: 
+        - 'Bana göre saat varmı?' gibi sorgular product_search intent'ine aittir çünkü kullanıcı ürün arıyor.
+        - 'ürün öner', 'ne önerirsin' gibi sorgular product_recommendation intent'ine aittir çünkü kullanıcı öneri istiyor.
+        - 'bana oyuncak öner', 'kitap bul' gibi spesifik ürün aramaları product_search intent'ine aittir çünkü kullanıcı belirli bir ürün arıyor.
+        - 'elektronik listele', 'giyim listele' gibi kategori listeleme istekleri category_browse intent'ine aittir çünkü kullanıcı kategoriye göre ürün listesi istiyor.
         
         Context: " . json_encode($context, JSON_UNESCAPED_UNICODE) . "
 
@@ -298,29 +361,36 @@ class AIService
      */
     private function parseIntentResponse(string $response): array
     {
-        try {
-            $parsed = json_decode($response, true);
-            
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $parsed;
+        Log::info('parseIntentResponse called with:', ['response' => $response]);
+        
+        // JSON formatında response gelirse parse et
+        if (preg_match('/\{.*\}/s', $response)) {
+            try {
+                $jsonData = json_decode($response, true);
+                if (json_last_error() === JSON_ERROR_NONE && isset($jsonData['intent'])) {
+                    Log::info('JSON response parsed successfully:', $jsonData);
+                    return $jsonData;
+                }
+            } catch (\Exception $e) {
+                Log::warning('JSON parsing failed:', ['error' => $e->getMessage()]);
             }
-        } catch (\Exception $e) {
-            // JSON parse edilemezse fallback
         }
-
-        // Fallback parsing - daha gelişmiş pattern matching
+        
+        // Structured text parsing
         $intent = 'unknown';
         $confidence = 0.5;
         
-        // Saat, telefon, ürün arama gibi sorgular
-        if (preg_match('/(saat|telefon|ürün|elbise|ayakkabı|bilgisayar|kitap|mobilya|elektronik|giyim|aksesuar|kozmetik|spor|ev|bahçe|oyuncak|kitap|müzik|film|oyun)/i', $response)) {
-            $intent = 'product_search';
-            $confidence = 0.85;
+        // "Ürün öner", "ürün tavsiye" gibi ifadeler - ÖNCELİKLİ
+        if (preg_match('/(ürün öner|ürün tavsiye|ne önerirsin|bana göre|öner|tavsiye)/i', $response)) {
+            $intent = 'product_recommendation';
+            $confidence = 0.95;
+            Log::info('Intent detected as product_recommendation from parseIntentResponse');
         }
         // "Bana göre", "ne önerirsin", "bul" gibi ifadeler
-        elseif (preg_match('/(bana göre|ne önerirsin|bul|ara|göster|listele|var mı|mevcut)/i', $response)) {
-            $intent = 'product_search';
+        elseif (preg_match('/(bana göre|ne önerirsin|öner|tavsiye|bul|ara|göster|listele|var mı|mevcut)/i', $response)) {
+            $intent = 'product_recommendation';
             $confidence = 0.9;
+            Log::info('Intent detected as product_recommendation from parseIntentResponse pattern 2');
         }
         // Ürün bilgisi
         elseif (preg_match('/(özellik|fiyat|garanti|teknik|detay|açıklama)/i', $response)) {
@@ -352,7 +422,9 @@ class AIService
             $intent = 'cart_management';
             $confidence = 0.8;
         }
-
+        
+        Log::info('parseIntentResponse final result:', ['intent' => $intent, 'confidence' => $confidence]);
+        
         return [
             'intent' => $intent,
             'confidence' => $confidence,
@@ -842,5 +914,401 @@ class AIService
         }
         
         return $matchedAttributes;
+    }
+
+    /**
+     * Resim içeriğini analiz eder ve ürün özelliklerini çıkarır
+     */
+    public function analyzeImageContent(string $imageUrl, string $context = ''): array
+    {
+        try {
+            $systemPrompt = "Sen bir e-ticaret ürün analiz uzmanısın. Verilen ürün resmini detaylı olarak analiz et ve site ziyaretçilerine kapsamlı bilgi vermek üzere ürün özelliklerini belirle.
+
+            Analiz kuralları:
+            1. Ürünün türünü ve kategorisini net olarak belirle
+            2. Görsel özellikleri detaylandır (renk, şekil, boyut, stil, kalıp)
+            3. Malzeme ve kumaş özelliklerini belirle (varsa)
+            4. Tasarım detaylarını açıkla (cepler, fermuarlar, dikişler, astar)
+            5. Kullanım alanı ve sezon bilgisini belirle
+            6. Bakım ve kullanım önerilerini ekle
+            7. Hedef kitleyi belirle
+            8. Türkçe yanıt ver
+            9. Ürün türüne göre özel özellikleri vurgula
+
+            Ürün türüne göre özel alanlar:
+            - Giyim ürünleri: Kalıp, kumaş türü, cep detayları, fermuar, dikiş, astar
+            - Ayakkabı: Taban, topuk, malzeme, bağcık, iç taban
+            - Aksesuar: Malzeme, boyut, ayarlanabilir özellikler
+            - Elektronik: Teknik özellikler, bağlantı türleri, güç
+            - Ev eşyaları: Malzeme, boyut, montaj, kullanım alanı
+
+            Yanıtı şu formatta ver:
+            {
+                \"product_type\": \"ürün türü\",
+                \"category\": \"kategori\",
+                \"visual_features\": {
+                    \"color\": \"renk\",
+                    \"style\": \"stil\",
+                    \"fit\": \"kalıp\",
+                    \"design\": \"tasarım özellikleri\"
+                },
+                \"material_features\": {
+                    \"fabric\": \"kumaş türü\",
+                    \"lining\": \"astar\",
+                    \"hardware\": \"metal aksesuarlar\"
+                },
+                \"design_details\": {
+                    \"pockets\": \"cep detayları\",
+                    \"closures\": \"kapanma sistemi\",
+                    \"stitching\": \"dikiş detayları\",
+                    \"special_features\": \"özel özellikler\"
+                },
+                \"usage_info\": {
+                    \"season\": \"sezon\",
+                    \"occasion\": \"kullanım alanı\",
+                    \"care_instructions\": \"bakım talimatları\"
+                },
+                \"target_audience\": \"hedef kitle\",
+                \"summary\": \"kısa ürün özeti\"
+            }";
+
+            // OpenAI Vision API için gpt-4o kullan (resim analizi destekler)
+            $visionModel = 'gpt-4o';
+            
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->baseUrl . '/chat/completions', [
+                'model' => $visionModel,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => 'Bu bir e-ticaret sitesi ürünüdür. Bu ürünü site ziyaretçilerine doğru ve eksiksiz bilgi vermek üzere detaylı özelliklerini belirle. Ürün türüne göre özel özellikleri vurgula.'
+                        ],
+                        [
+                            'type' => 'image_url',
+                            'image_url' => [
+                                'url' => $imageUrl
+                            ]
+                        ]
+                    ]]
+                ],
+                'max_tokens' => 800,
+                'temperature' => 0.3
+            ]);
+
+            if (!$response->successful()) {
+                throw new \Exception('OpenAI API Error: ' . $response->body());
+            }
+
+            $data = $response->json();
+            $analysis = json_decode($data['choices'][0]['message']['content'], true);
+            
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $analysis;
+            }
+
+            // JSON parse hatası durumunda fallback
+            return $this->fallbackImageAnalysis($imageUrl, $context);
+            
+        } catch (\Exception $e) {
+            Log::error('OpenAI image analysis error: ' . $e->getMessage());
+            return $this->fallbackImageAnalysis($imageUrl, $context);
+        }
+    }
+
+    /**
+     * Fallback image analysis - basit ürün türü tespiti
+     */
+    private function fallbackImageAnalysis(string $imageUrl, string $context): array
+    {
+        // URL'den basit ürün türü tespiti
+        $url = strtolower($imageUrl);
+        $productType = 'genel ürün';
+        $category = 'genel';
+        
+        if (strpos($url, 'saat') !== false || strpos($url, 'watch') !== false) {
+            $productType = 'akıllı saat';
+            $category = 'elektronik';
+        } elseif (strpos($url, 'telefon') !== false || strpos($url, 'phone') !== false) {
+            $productType = 'telefon';
+            $category = 'elektronik';
+        } elseif (strpos($url, 'bilgisayar') !== false || strpos($url, 'computer') !== false || strpos($url, 'laptop') !== false) {
+            $productType = 'bilgisayar';
+            $category = 'elektronik';
+        } elseif (strpos($url, 'giyim') !== false || strpos($url, 'clothing') !== false || strpos($url, 'tshirt') !== false) {
+            $productType = 'giyim ürünü';
+            $category = 'giyim';
+        } elseif (strpos($url, 'ayakkabı') !== false || strpos($url, 'shoe') !== false) {
+            $productType = 'ayakkabı';
+            $category = 'giyim';
+        }
+
+        return [
+            'product_type' => $productType,
+            'category' => $category,
+            'visual_features' => [
+                'color' => 'belirlenemedi',
+                'style' => 'belirlenemedi',
+                'fit' => 'belirlenemedi',
+                'design' => 'belirlenemedi'
+            ],
+            'material_features' => [
+                'fabric' => 'belirlenemedi',
+                'lining' => 'belirlenemedi',
+                'hardware' => 'belirlenemedi'
+            ],
+            'design_details' => [
+                'pockets' => 'belirlenemedi',
+                'closures' => 'belirlenemedi',
+                'stitching' => 'belirlenemedi',
+                'special_features' => 'belirlenemedi'
+            ],
+            'usage_info' => [
+                'season' => 'belirlenemedi',
+                'occasion' => 'genel kullanım',
+                'care_instructions' => 'belirlenemedi'
+            ],
+            'target_audience' => 'genel kullanıcı',
+            'summary' => $context ?: 'Ürün resmi analiz edilemedi, fallback bilgi kullanıldı'
+        ];
+    }
+
+    /**
+     * Chunk içeriğindeki resim URL'lerini tespit eder ve analiz eder
+     */
+    public function processChunkImages(string $content, string $context = ''): array
+    {
+        try {
+            // Resim URL'lerini tespit et
+            $imageUrls = $this->extractImageUrls($content);
+            
+            if (empty($imageUrls)) {
+                return [
+                    'has_images' => false,
+                    'image_vision' => null,
+                    'processed_images' => 0
+                ];
+            }
+
+            // İlk resmi analiz et (birden fazla resim varsa ilkini al)
+            $firstImageUrl = $imageUrls[0];
+            $imageAnalysis = $this->analyzeImageContent($firstImageUrl, $context);
+            
+            // image_vision field'ı için JSON formatında kaydet
+            $imageVision = json_encode($imageAnalysis, JSON_UNESCAPED_UNICODE);
+            
+            Log::info('Image analysis completed for chunk', [
+                'image_url' => $firstImageUrl,
+                'analysis' => $imageAnalysis,
+                'context' => $context
+            ]);
+
+            return [
+                'has_images' => true,
+                'image_vision' => $imageVision,
+                'processed_images' => count($imageUrls),
+                'image_urls' => $imageUrls,
+                'analysis' => $imageAnalysis
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Chunk image processing error: ' . $e->getMessage());
+            return [
+                'has_images' => false,
+                'image_vision' => null,
+                'processed_images' => 0,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Content'ten resim URL'lerini çıkarır
+     */
+    private function extractImageUrls(string $content): array
+    {
+        $imageUrls = [];
+        
+        // HTML img tag'lerini bul
+        preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $content, $matches);
+        if (!empty($matches[1])) {
+            $imageUrls = array_merge($imageUrls, $matches[1]);
+        }
+        
+        // Markdown resim syntax'ını bul
+        preg_match_all('/!\[([^\]]*)\]\(([^)]+)\)/i', $content, $matches);
+        if (!empty($matches[2])) {
+            $imageUrls = array_merge($imageUrls, $matches[2]);
+        }
+        
+        // Plain text URL'leri bul (http/https ile başlayan)
+        preg_match_all('/https?:\/\/[^\s<>"\']+\.(jpg|jpeg|png|gif|webp|svg)/i', $content, $matches);
+        if (!empty($matches[0])) {
+            $imageUrls = array_merge($imageUrls, $matches[0]);
+        }
+        
+        // JSON içeriğindeki resim URL'lerini bul
+        try {
+            $jsonData = json_decode($content, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($jsonData)) {
+                $this->extractImageUrlsFromJson($jsonData, $imageUrls);
+            }
+        } catch (\Exception $e) {
+            // JSON parse hatası durumunda devam et
+        }
+        
+        // Duplicate'leri kaldır ve boş olanları filtrele
+        $imageUrls = array_filter(array_unique($imageUrls), function($url) {
+            return !empty(trim($url)) && filter_var($url, FILTER_VALIDATE_URL);
+        });
+        
+        return array_values($imageUrls);
+    }
+
+    /**
+     * JSON verisinden resim URL'lerini çıkarır
+     */
+    private function extractImageUrlsFromJson(array $data, array &$imageUrls): void
+    {
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $this->extractImageUrlsFromJson($value, $imageUrls);
+            } elseif (is_string($value) && $this->isImageUrl($value)) {
+                $imageUrls[] = $value;
+            } elseif (is_string($key) && strtolower($key) === 'image' && is_string($value) && $this->isImageUrl($value)) {
+                $imageUrls[] = $value;
+            }
+        }
+    }
+
+    /**
+     * String'in resim URL'i olup olmadığını kontrol eder
+     */
+    private function isImageUrl(string $url): bool
+    {
+        $url = trim($url);
+        
+        // Boş string kontrolü
+        if (empty($url)) {
+            return false;
+        }
+        
+        // URL format kontrolü
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        
+        // Resim uzantısı kontrolü
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        $pathInfo = pathinfo(parse_url($url, PHP_URL_PATH));
+        $extension = strtolower($pathInfo['extension'] ?? '');
+        
+        return in_array($extension, $imageExtensions);
+    }
+
+    /**
+     * Resimleri analiz eder ve image vision sonuçlarını döner
+     */
+    public function analyzeImages(array $imageUrls): ?string
+    {
+        try {
+            if (empty($imageUrls)) {
+                return null;
+            }
+            
+            $analysisResults = [];
+            
+            foreach ($imageUrls as $imageUrl) {
+                try {
+                    $analysis = $this->analyzeSingleImage($imageUrl);
+                    if ($analysis) {
+                        $analysisResults[] = [
+                            'url' => $imageUrl,
+                            'analysis' => $analysis
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Image analysis failed for {$imageUrl}: " . $e->getMessage());
+                    continue;
+                }
+            }
+            
+            if (empty($analysisResults)) {
+                return null;
+            }
+            
+            // Sonuçları JSON formatında döndür
+            return json_encode([
+                'total_images' => count($imageUrls),
+                'analyzed_images' => count($analysisResults),
+                'results' => $analysisResults,
+                'analysis_timestamp' => now()->toISOString()
+            ], JSON_UNESCAPED_UNICODE);
+            
+        } catch (\Exception $e) {
+            Log::error('Image analysis error: ' . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Tek bir resmi analiz eder
+     */
+    private function analyzeSingleImage(string $imageUrl): ?array
+    {
+        try {
+            // OpenAI Vision API kullanarak resim analizi
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->baseUrl . '/chat/completions', [
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'text',
+                                'text' => 'Bu resmi detaylı olarak analiz et ve şu bilgileri ver: 1) Resmin içeriği ve ne gösterdiği 2) Renkler ve stil 3) Varsa metin içeriği 4) Genel atmosfer ve duygu 5) Ticari kullanım için uygunluk. Sonucu JSON formatında döndür.'
+                            ],
+                            [
+                                'type' => 'image_url',
+                                'image_url' => [
+                                    'url' => $imageUrl
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'max_tokens' => 500,
+                'temperature' => 0.1
+            ]);
+            
+            if (!$response->successful()) {
+                throw new \Exception('Vision API Error: ' . $response->body());
+            }
+            
+            $data = $response->json();
+            $content = $data['choices'][0]['message']['content'] ?? '';
+            
+            // JSON response'u parse etmeye çalış
+            $decoded = json_decode($content, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+            
+            // JSON parse edilemezse text olarak döndür
+            return [
+                'raw_analysis' => $content,
+                'parsing_error' => 'Response JSON formatında değil'
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error("Single image analysis error for {$imageUrl}: " . $e->getMessage());
+            return null;
+        }
     }
 }

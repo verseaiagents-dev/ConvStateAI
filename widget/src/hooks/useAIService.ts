@@ -35,48 +35,117 @@ export const useAIService = (options: AIServiceOptions = {}) => {
     return newSessionId;
   }, []);
 
-  // defaultOptions artık kullanılmıyor, kaldırıldı
+  // AI Service with API integration - Ana fonksiyon
+  const generateAIResponse = useCallback(async (userMessage: string, context?: any): Promise<AIResponse> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const sessionId = getOrCreateSession();
+      
+      // Doğrudan Laravel backend'e istek at
+      const apiUrl = 'http://127.0.0.1:8000/api/chat';
+      
+      console.log('Sending request to:', apiUrl);
+      console.log('Request payload:', {
+        message: userMessage,
+        session_id: sessionId,
+        context: context
+      });
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': 'http://localhost:3000'
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          session_id: sessionId,
+          context: context
+        })
+      });
 
-  // Local AI logic (fallback) - Önce tanımlanmalı
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response Data:', data);
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Transform API response to AIResponse format
+      const aiResponse: AIResponse = {
+        type: data.type || 'general',
+        message: data.message || 'Üzgünüm, şu anda yanıt veremiyorum.',
+        products: data.data?.products || data.products || [],
+        intent: data.intent || data.type || 'general',
+        confidence: data.confidence || 0.8,
+        suggestions: data.suggestions || [],
+        session_id: data.session_id || sessionId,
+        data: data.data || {}
+      };
+
+      console.log('Transformed AI Response:', aiResponse);
+      
+      // Products field'ını kontrol et
+      if (aiResponse.products && aiResponse.products.length > 0) {
+        console.log('Products found:', aiResponse.products);
+        console.log('Products count:', aiResponse.products.length);
+        console.log('First product:', aiResponse.products[0]);
+        
+        // Products varsa ve type product_search veya category_browse ise product_recommendation yap
+        if (aiResponse.type === 'product_search' || aiResponse.type === 'category_browse') {
+          aiResponse.type = 'product_recommendation';
+          console.log(`Updated type from ${aiResponse.type} to product_recommendation`);
+        }
+      } else {
+        console.log('No products in response');
+        console.log('data.data?.products:', data.data?.products);
+        console.log('data.products:', data.products);
+      }
+      
+      // Response validation - products varsa type'ı product_recommendation yap
+      if (aiResponse.products && aiResponse.products.length > 0 && 
+          (aiResponse.type === 'product_search' || aiResponse.type === 'category_browse')) {
+        aiResponse.type = 'product_recommendation';
+        console.log('Updated type to product_recommendation');
+      }
+      
+      return aiResponse;
+      
+    } catch (error) {
+      console.error('AI Service Error:', error);
+      setError(error instanceof Error ? error.message : 'Bilinmeyen hata oluştu');
+      
+      // Fallback to local response if API fails
+      return generateLocalResponse(userMessage, context);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getOrCreateSession]);
+
+  // Local AI logic (fallback) - Sadece API başarısız olduğunda kullanılır
   const generateLocalResponse = useCallback((userMessage: string, context?: any): AIResponse => {
     const message = userMessage.toLowerCase();
     
     if (message.includes('ürün') || message.includes('product') || message.includes('satın al')) {
       return {
         type: 'product_recommendation',
-        message: '',
-        products: [
-          {
-            id: '1',
-            name: 'Smart Watch Pro',
-            brand: 'TechBrand',
-            price: 299.99,
-            image: '/imgs/smartwatch.jpeg',
-            category: 'Electronics',
-            rating: 4.5
-          },
-          {
-            id: '2',
-            name: 'Wireless Earbuds',
-            brand: 'AudioTech',
-            price: 149.99,
-            image: '/imgs/earbuds.jpeg',
-            category: 'Electronics',
-            rating: 4.3
-          },
-          {
-            id: '3',
-            name: 'Smart Speaker',
-            brand: 'HomeTech',
-            price: 199.99,
-            image: '/imgs/smartspeaker.jpeg',
-            category: 'Electronics',
-            rating: 4.7
-          }
-        ],
+        message: 'Ürün önerileri için API bağlantısı gerekli. Lütfen daha sonra tekrar deneyin.',
+        products: [],
         intent: 'product_inquiry',
-        confidence: 0.9,
-        suggestions: ['Daha fazla ürün göster', 'Fiyat bilgisi', 'Teknik özellikler']
+        confidence: 0.5,
+        suggestions: ['Tekrar dene', 'Yardım al']
       };
     } else if (message.includes('merhaba') || message.includes('hello') || message.includes('selam')) {
       return {
@@ -131,67 +200,15 @@ export const useAIService = (options: AIServiceOptions = {}) => {
 
   // parseAIResponse fonksiyonu artık kullanılmıyor, kaldırıldı
 
-  // Laravel API call
+  // Laravel API call - generateAIResponse ile aynı mantık
   const generateResponse = useCallback(async (userMessage: string, sessionId?: string): Promise<AIResponse> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Session ID'yi kullan veya yeni oluştur
-      const currentSessionId = sessionId || getOrCreateSession();
-      
-      // Laravel API'ye POST request gönder - Doğrudan Laravel sunucusuna
-      const apiUrl = 'http://127.0.0.1:8000/api/chat';
-  
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          session_id: currentSessionId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      
-      // API response'unu AIResponse formatına dönüştür
-      const aiResponse: AIResponse = {
-        type: data.type || 'general',
-        message: data.message || '',
-        products: data.data?.products || data.products || [], // data.products öncelikli
-        intent: data.type || data.intent || 'general', // type field'ını intent olarak da kullan
-        confidence: data.confidence || 0.8,
-        suggestions: data.suggestions || [],
-        data: data.data || {},
-        session_id: currentSessionId // Mevcut session ID'yi kullan
-      };
-      
-
-
-      setIsLoading(false);
-      return aiResponse;
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'API bağlantı hatası');
-      setIsLoading(false);
-      
-      // Fallback to local AI logic
-      return generateLocalResponse(userMessage);
-    }
-  }, [generateLocalResponse, getOrCreateSession]);
+    return generateAIResponse(userMessage, { sessionId });
+  }, [generateAIResponse]);
 
   // Event handling için yeni fonksiyonlar
   const sendFeedback = useCallback(async (feedbackData: any) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/feedback', {
+      const response = await fetch((window as any).buildApiUrl('/api/feedback'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -212,7 +229,7 @@ export const useAIService = (options: AIServiceOptions = {}) => {
 
   const sendProductClick = useCallback(async (productData: any) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/product-click', {
+      const response = await fetch((window as any).buildApiUrl('/api/product-click'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +250,7 @@ export const useAIService = (options: AIServiceOptions = {}) => {
 
   const sendCargoTracking = useCallback(async (cargoData: any) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/cargo-tracking', {
+      const response = await fetch((window as any).buildApiUrl('/api/cargo-tracking'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,6 +271,7 @@ export const useAIService = (options: AIServiceOptions = {}) => {
 
   return {
     generateResponse,
+    generateAIResponse, // New API-based function
     sendFeedback,
     sendProductClick,
     sendCargoTracking,

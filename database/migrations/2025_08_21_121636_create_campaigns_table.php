@@ -29,6 +29,8 @@ return new class extends Migration
             $table->integer('current_usage')->default(0);
             $table->string('image_url')->nullable();
             $table->text('terms_conditions')->nullable();
+            $table->boolean('ai_generated')->default(false);
+            $table->decimal('ai_confidence_score', 5, 2)->nullable();
             $table->timestamps();
 
             $table->index(['site_id', 'is_active']);

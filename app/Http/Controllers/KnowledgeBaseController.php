@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 use App\Models\KnowledgeBase;
 use App\Models\KnowledgeChunk;
 use App\Models\FieldMapping;
+use App\Models\Project;
 use App\Services\KnowledgeBase\ContentChunker;
 use App\Services\KnowledgeBase\AIService;
 use App\Services\KnowledgeBase\FAQOptimizationService;
@@ -35,12 +37,58 @@ class KnowledgeBaseController extends Controller
     /**
      * Show knowledge base page
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
-        $knowledgeBases = KnowledgeBase::with('chunks')->orderBy('created_at', 'desc')->get();
+        $projectId = $request->query('project_id');
         
-        return view('dashboard.knowledge-base', compact('user', 'knowledgeBases'));
+        // If project_id is provided, validate it exists
+        if ($projectId) {
+            $project = Project::find($projectId);
+            if (!$project) {
+                abort(404, 'Project not found');
+            }
+        }
+        
+        return view('dashboard.knowledge-base', compact('user', 'projectId'));
+    }
+
+    /**
+     * Load knowledge base content for lazy loading
+     */
+    public function loadContent(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $projectId = $request->query('project_id');
+            
+            // Get knowledge bases
+            $knowledgeBases = KnowledgeBase::with('chunks')->orderBy('created_at', 'desc')->get();
+            
+            // Get projects
+            $projects = Project::where('created_by', $user->id)->orderBy('created_at', 'desc')->get();
+            
+            // Get project if project_id is provided
+            $project = null;
+            if ($projectId) {
+                $project = Project::find($projectId);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'knowledgeBases' => $knowledgeBases,
+                    'projects' => $projects,
+                    'project' => $project
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'İçerik yüklenirken hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -54,6 +102,7 @@ class KnowledgeBaseController extends Controller
                 'file' => 'required|file|mimes:csv,txt,xml,json,xlsx,xls|max:10240', // 10MB max
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string|max:1000',
+                'project_id' => 'nullable|exists:projects,id',
             ], [
                 'file.required' => 'Dosya seçilmedi',
                 'file.file' => 'Geçersiz dosya',
@@ -95,6 +144,7 @@ class KnowledgeBaseController extends Controller
             // Create knowledge base record
             $knowledgeBase = KnowledgeBase::create([
                 'site_id' => 1, // Default site
+                'project_id' => $request->input('project_id'),
                 'name' => $request->input('name'),
                 'description' => $request->input('description'),
                 'source_type' => 'file',
@@ -164,6 +214,7 @@ class KnowledgeBaseController extends Controller
             'url' => 'required|url|max:500',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
+            'project_id' => 'nullable|exists:projects,id',
         ]);
 
         try {
@@ -208,8 +259,9 @@ class KnowledgeBaseController extends Controller
             // Create knowledge base record
             $knowledgeBase = KnowledgeBase::create([
                 'site_id' => 1, // Default site
+                'project_id' => $request->input('project_id'),
                 'name' => $request->input('name'),
-                'description' => $request->input('description'),
+                'description' => $request->input('description') . ' | URL: ' . $url, // URL'yi description'a ekle
                 'source_type' => 'url',
                 'source_path' => $url,
                 'file_type' => $extension,
@@ -665,7 +717,7 @@ class KnowledgeBaseController extends Controller
     }
 
     /**
-     * Get knowledge base chunks
+     * Get chunks for a knowledge base
      */
     public function getChunks($id)
     {
@@ -673,22 +725,154 @@ class KnowledgeBaseController extends Controller
             $knowledgeBase = KnowledgeBase::findOrFail($id);
             $chunks = KnowledgeChunk::where('knowledge_base_id', $id)
                 ->orderBy('chunk_index', 'asc')
-                ->orderBy('created_at', 'asc')
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'knowledge_base' => $knowledgeBase,
-                'chunks' => $chunks,
-                'total_chunks' => $chunks->count()
+                'chunks' => $chunks
             ]);
-            
         } catch (\Exception $e) {
+            Log::error('Error getting chunks: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Chunk\'lar alınırken hata oluştu: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Refresh chunks from URL and update image vision
+     */
+    public function refreshChunks(Request $request, $id)
+    {
+        try {
+            $knowledgeBase = KnowledgeBase::findOrFail($id);
+            
+            // Check if knowledge base is from URL
+            if ($knowledgeBase->source_type !== 'url') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu knowledge base dosyadan oluşturulmuş. Sadece URL\'den oluşturulan knowledge base\'ler yenilenebilir.'
+                ], 400);
+            }
+
+            // Get original URL from source_path field or description
+            $originalUrl = $knowledgeBase->source_path;
+            
+            // Eğer source_path'de URL yoksa, description'dan çıkar
+            if (empty($originalUrl) || !filter_var($originalUrl, FILTER_VALIDATE_URL)) {
+                if (preg_match('/URL: (https?:\/\/[^\s|]+)/', $knowledgeBase->description, $matches)) {
+                    $originalUrl = $matches[1];
+                }
+            }
+            
+            if (empty($originalUrl) || !filter_var($originalUrl, FILTER_VALIDATE_URL)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Orijinal URL bulunamadı. Knowledge base yenilenemez. Lütfen knowledge base\'i tekrar oluşturun.'
+                ], 400);
+            }
+
+            // Set timeout limit
+            set_time_limit(60); // 60 saniye
+
+            DB::beginTransaction();
+
+            try {
+                // Fetch content from URL with timeout
+                $content = $this->fetchContentFromUrl($originalUrl);
+                
+                // Process content and create new chunks
+                $chunks = $this->contentChunker->chunkContent($content, $knowledgeBase->id);
+                
+                // Delete old chunks
+                KnowledgeChunk::where('knowledge_base_id', $id)->delete();
+                
+                // Create new chunks with image vision analysis
+                foreach ($chunks as $chunkData) {
+                    $chunk = KnowledgeChunk::create([
+                        'knowledge_base_id' => $id,
+                        'content' => $chunkData['content'],
+                        'content_type' => $chunkData['content_type'] ?? 'text',
+                        'chunk_index' => $chunkData['chunk_index'],
+                        'word_count' => $chunkData['word_count'],
+                        'chunk_size' => $chunkData['chunk_size'],
+                        'content_hash' => $chunkData['content_hash'],
+                        'metadata' => $chunkData['metadata'] ?? null,
+                        'has_images' => $chunkData['has_images'] ?? false,
+                        'processed_images' => $chunkData['processed_images'] ?? 0,
+                        'image_vision' => $chunkData['image_vision'] ?? null,
+                    ]);
+                }
+
+                // Update knowledge base
+                $knowledgeBase->update([
+                    'chunk_count' => count($chunks),
+                    'updated_at' => now()
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Chunk\'lar başarıyla yenilendi. ' . count($chunks) . ' yeni chunk oluşturuldu.',
+                    'chunk_count' => count($chunks)
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error refreshing chunks: ' . $e->getMessage());
+            
+            // Kullanıcı dostu hata mesajları
+            $userMessage = 'Chunk\'lar yenilenirken hata oluştu. ';
+            
+            if (strpos($e->getMessage(), 'Maximum execution time') !== false) {
+                $userMessage .= 'İşlem çok uzun sürdü. Lütfen daha sonra tekrar deneyin.';
+            } elseif (strpos($e->getMessage(), 'URL') !== false) {
+                $userMessage .= 'URL erişilemez durumda. Lütfen URL\'nin doğru olduğundan emin olun.';
+            } else {
+                $userMessage .= 'Teknik bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => $userMessage
+            ], 500);
+        }
+    }
+
+    /**
+     * Fetch content from URL
+     */
+    private function fetchContentFromUrl($url)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 45); // 45 saniye
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15); // Bağlantı timeout'u
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+        
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            throw new \Exception("URL'den içerik alınamadı. CURL Hatası: {$error}");
+        }
+
+        if ($httpCode !== 200 || empty($content)) {
+            throw new \Exception("URL'den içerik alınamadı. HTTP Kodu: {$httpCode}");
+        }
+
+        return $content;
     }
 
     /**
@@ -699,8 +883,20 @@ class KnowledgeBaseController extends Controller
         try {
             $knowledgeBase = KnowledgeBase::findOrFail($id);
             
+            // Check if user owns this knowledge base or has permission
+            $user = Auth::user();
+            if ($knowledgeBase->created_by && $knowledgeBase->created_by !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu bilgi tabanını silme yetkiniz yok.'
+                ], 403);
+            }
+            
             // Delete associated chunks
             $knowledgeBase->chunks()->delete();
+            
+            // Delete field mappings if any
+            FieldMapping::where('knowledge_base_id', $id)->delete();
             
             // Delete file from storage
             if ($knowledgeBase->source_type === 'file' && $knowledgeBase->source_path) {
@@ -716,6 +912,7 @@ class KnowledgeBaseController extends Controller
             ]);
             
         } catch (\Exception $e) {
+            Log::error('Knowledge base deletion error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Knowledge base silinirken hata oluştu: ' . $e->getMessage()
@@ -950,6 +1147,54 @@ class KnowledgeBaseController extends Controller
                 'message' => 'FAQ optimizasyonu başarısız: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Evaluate chunk quality
+     */
+    private function evaluateChunkQuality(array $chunks): array
+    {
+        if (empty($chunks)) {
+            return [
+                'overlap_quality' => 0,
+                'size_consistency' => 0,
+                'content_quality' => 0,
+                'overall_score' => 0
+            ];
+        }
+
+        $totalChunks = count($chunks);
+        $sizes = array_column($chunks, 'chunk_size');
+        $avgSize = array_sum($sizes) / $totalChunks;
+        
+        // Size consistency
+        $sizeVariance = 0;
+        foreach ($sizes as $size) {
+            $sizeVariance += pow($size - $avgSize, 2);
+        }
+        $sizeVariance = $sizeVariance / $totalChunks;
+        $sizeConsistency = max(0, 100 - ($sizeVariance / 100));
+        
+        // Content quality (basic check)
+        $contentQuality = 0;
+        foreach ($chunks as $chunk) {
+            if (isset($chunk['content']) && strlen($chunk['content']) > 50) {
+                $contentQuality += 100;
+            }
+        }
+        $contentQuality = $contentQuality / $totalChunks;
+        
+        // Overlap quality (simplified)
+        $overlapQuality = 80; // Default value
+        
+        $overallScore = ($sizeConsistency + $contentQuality + $overlapQuality) / 3;
+        
+        return [
+            'overlap_quality' => $overlapQuality,
+            'size_consistency' => $sizeConsistency,
+            'content_quality' => $contentQuality,
+            'overall_score' => $overallScore
+        ];
     }
 
     /**
@@ -1386,4 +1631,64 @@ class KnowledgeBaseController extends Controller
             ->header('Content-Type', 'text/csv')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
+
+    /**
+     * Mevcut chunk'larda resim analizi yeniler
+     */
+    public function refreshImageAnalysis(Request $request)
+    {
+        try {
+            $this->info('Resim analizi yenileme başlatılıyor...');
+            
+            // Background job olarak çalıştır
+            \Artisan::queue('app:process-product-updates', ['--refresh-chunks' => true]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Resim analizi yenileme başlatıldı. Bu işlem arka planda çalışacak.',
+                'job_started' => true
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Image analysis refresh error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Resim analizi yenileme hatası: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Resim analizi durumunu kontrol eder
+     */
+    public function getImageAnalysisStatus()
+    {
+        try {
+            $chunks = KnowledgeChunk::all();
+            
+            $summary = [
+                'total_chunks' => $chunks->count(),
+                'chunks_with_images' => $chunks->where('has_images', true)->count(),
+                'chunks_without_images' => $chunks->where('has_images', false)->count(),
+                'total_images_processed' => $chunks->sum('processed_images'),
+                'chunks_with_vision' => $chunks->whereNotNull('image_vision')->count(),
+                'last_updated' => $chunks->max('updated_at')?->diffForHumans()
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'summary' => $summary
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Image analysis status error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Durum bilgisi alınamadı: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

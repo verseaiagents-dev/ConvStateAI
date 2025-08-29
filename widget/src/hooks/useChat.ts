@@ -17,7 +17,7 @@ export const useChat = (aiApiKey?: string) => {
   const chatContentRef = useRef<HTMLDivElement>(null);
 
   // AI Service
-  const { generateResponse, sendFeedback, isLoading: aiLoading } = useAIService({ apiKey: aiApiKey });
+  const { generateResponse, generateAIResponse: aiServiceGenerateAIResponse, sendFeedback, isLoading: aiLoading } = useAIService({ apiKey: aiApiKey });
 
   // Session Management
   useEffect(() => {
@@ -97,8 +97,24 @@ export const useChat = (aiApiKey?: string) => {
 
   // Add message function
   const addMessage = useCallback((text: string, role: 'user' | 'agent', products?: Product[], additionalData?: any) => {
+    // Duplicate message prevention - check if the same message was added recently
+    const now = Date.now();
+    const recentMessages = messages.slice(-3); // Check last 3 messages
+    
+    const isDuplicate = recentMessages.some(msg => {
+      const timeDiff = now - msg.timestamp.getTime();
+      return timeDiff < 1000 && // Within 1 second
+             msg.content === text && 
+             msg.role === role;
+    });
+    
+    if (isDuplicate) {
+      console.log('useChat: Duplicate message detected, skipping:', { text, role });
+      return;
+    }
+    
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       content: text,
       role,
       timestamp: new Date(),
@@ -106,37 +122,47 @@ export const useChat = (aiApiKey?: string) => {
       ...additionalData // type, data, suggestions, intent gibi ek alanları ekle
     };
 
+    console.log('useChat: addMessage called with:', { text, role, products, additionalData });
+    console.log('useChat: Created message object:', newMessage);
+
     setMessages(prev => [...prev, newMessage]);
     setScrollToBottom(true);
-  }, []);
+  }, [messages]);
 
   // Enhanced AI response with suggestions and shimmer loading
   const generateAIResponse = useCallback(async (userMessage: string) => {
     setIsTyping(true);
     
+    console.log('useChat: generateAIResponse called with:', userMessage);
+    
     // Session'ı refresh et (her AI interaction'da)
     refreshSession();
     
-    // Add shimmer loading message first
-    const shimmerId = Date.now().toString();
+    // Shimmer loading state'i - messages array'e ekleme, sadece UI state olarak kullan
     const shimmerType = getShimmerType(userMessage);
-    addMessage('', 'agent', [], { 
-      id: shimmerId,
-      type: 'shimmer',
-      shimmerType,
-      isShimmer: true 
-    });
     
     try {
-      // Random delay between 750ms and 1500ms
-      const delay = Math.random() * (1500 - 750) + 750;
+      // Random delay between 1500ms and 2500ms (daha uzun süre)
+      const delay = Math.random() * (2500 - 1500) + 1500;
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      // Session ID ile AI response al
-      const aiResponse = await generateResponse(userMessage, sessionId);
+      console.log('useChat: Calling aiServiceGenerateAIResponse...');
       
-      // Remove shimmer message
-      setMessages(prev => prev.filter(msg => msg.id !== shimmerId));
+      // Use the new API-based AI response function
+      const aiResponse = await aiServiceGenerateAIResponse(userMessage);
+      
+      console.log('useChat: Received AI response:', aiResponse);
+      
+      // Response validation - products field'ını kontrol et
+      if (!aiResponse.products || aiResponse.products.length === 0) {
+        console.log('useChat: No products in response, checking data.products...');
+        if (aiResponse.data && aiResponse.data.products && aiResponse.data.products.length > 0) {
+          aiResponse.products = aiResponse.data.products;
+          console.log('useChat: Products found in data.products:', aiResponse.products);
+        } else {
+          console.log('useChat: No products found anywhere in response');
+        }
+      }
       
       // Add AI response with all data from Laravel
       const additionalData = {
@@ -147,25 +173,35 @@ export const useChat = (aiApiKey?: string) => {
         session_id: sessionId // Mevcut session ID'yi kullan
       };
 
-      addMessage(aiResponse.message || aiResponse.type, 'agent', aiResponse.products, additionalData);
+      console.log('useChat: Adding message with additional data:', additionalData);
+      console.log('useChat: Products to add:', aiResponse.products);
+
+      // Products'ı doğru şekilde extract et
+      const products = aiResponse.products || aiResponse.data?.products || [];
+      console.log('useChat: Final products array:', products);
+      console.log('useChat: Products length:', products.length);
+
+      // Response'u widget'a eklemeden önce daha uzun bir delay ekle
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      addMessage(aiResponse.message || aiResponse.type, 'agent', products, additionalData);
       
       // Add suggestions if available
       if (aiResponse.suggestions && aiResponse.suggestions.length > 0) {
         // You can add suggestion buttons here
+        console.log('useChat: Suggestions available:', aiResponse.suggestions);
       }
       
     } catch (error) {
       // AI response error
-      
-      // Remove shimmer message
-      setMessages(prev => prev.filter(msg => msg.id !== shimmerId));
+      console.error('useChat: Error in generateAIResponse:', error);
       
       // Fallback response
       addMessage('Üzgünüm, şu anda yanıt üretemiyorum. Lütfen daha sonra tekrar deneyin.', 'agent');
     } finally {
       setIsTyping(false);
     }
-  }, [generateResponse, addMessage, sessionId, refreshSession]);
+  }, [aiServiceGenerateAIResponse, addMessage, sessionId, refreshSession]);
 
 
 
@@ -190,10 +226,12 @@ export const useChat = (aiApiKey?: string) => {
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     
+    console.log('useChat: sendMessage called with:', text);
+    
     // Add user message
     addMessage(text, 'user');
     
-    
+    console.log('useChat: User message added, now generating AI response...');
     
     // Generate AI response
     await generateAIResponse(text);

@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Campaign;
 
 class User extends Authenticatable
 {
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'bio',
         'personal_token',
         'token_expires_at',
+        'language',
     ];
 
     /**
@@ -49,6 +51,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -77,17 +80,65 @@ class User extends Authenticatable
             return asset('storage/' . $this->avatar);
         }
         
-        // Generate initials avatar
-        $initials = strtoupper(substr($this->getDisplayName(), 0, 2));
-        $colors = ['#8B5CF6', '#A855F7', '#EC4899', '#F59E0B', '#10B981'];
-        $color = $colors[array_rand($colors)];
-        
-        return "data:image/svg+xml," . urlencode("
-            <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'>
-                <rect width='100' height='100' fill='{$color}'/>
-                <text x='50' y='50' font-family='Arial' font-size='40' fill='white' text-anchor='middle' dy='.3em'>{$initials}</text>
-            </svg>
-        ");
+        // Uygulama varsayılan resmi
+        return asset('imgs/ai-conversion-logo.svg');
+    }
+
+    /**
+     * Get user's language preference
+     */
+    public function getLanguage(): string
+    {
+        return $this->language ?? 'tr';
+    }
+
+    /**
+     * Get user's campaigns
+     */
+    public function campaigns()
+    {
+        return $this->hasMany(Campaign::class, 'created_by');
+    }
+
+    /**
+     * Active subscription ile ilişki
+     */
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class, 'tenant_id')->where('status', 'active');
+    }
+
+    /**
+     * Tüm subscription'lar ile ilişki
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'tenant_id');
+    }
+
+    /**
+     * Kullanıcının aktif planı var mı?
+     */
+    public function hasActiveSubscription(): bool
+    {
+        return $this->activeSubscription()->exists();
+    }
+
+    /**
+     * Kullanıcının plan adını getir
+     */
+    public function getPlanNameAttribute(): ?string
+    {
+        $subscription = $this->activeSubscription()->with('plan')->first();
+        return $subscription?->plan?->name;
+    }
+    
+    /**
+     * Set user's language preference
+     */
+    public function setLanguage(string $language): void
+    {
+        $this->update(['language' => $language]);
     }
 
     /**

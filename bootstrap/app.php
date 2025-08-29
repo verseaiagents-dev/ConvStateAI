@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->web(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
         $middleware->web(\Illuminate\Session\Middleware\StartSession::class);
+        $middleware->web(\App\Http\Middleware\SetLocale::class);
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'subscription' => \App\Http\Middleware\SubscriptionMiddleware::class,
+        ]);
+        $middleware->api(\App\Http\Middleware\CustomCorsMiddleware::class);
         $middleware->api(\Illuminate\Http\Middleware\HandleCors::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

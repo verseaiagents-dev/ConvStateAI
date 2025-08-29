@@ -1,31 +1,43 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Real-time Analytics')
+@section('title', __('dashboard.real_time_analytics'))
 
 @section('content')
 <!-- CSRF Token -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold gradient-text">Real-time Analytics Dashboard</h1>
-            <p class="mt-2 text-gray-400">Gerçek zamanlı analitik veriler ve performans metrikleri</p>
-        </div>
-        <div class="mt-4 sm:mt-0 flex space-x-3">
-            <button onclick="refreshAnalytics()" class="inline-flex items-center px-4 py-2 bg-purple-glow hover:bg-purple-dark text-white font-medium rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-glow/25">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                Refresh
-            </button>
-            <button onclick="exportAnalytics()" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-green-600/25">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Export
-            </button>
+    <!-- Analytics Dashboard Header -->
+    <div class="glass-effect rounded-2xl p-8 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-glow rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        <div class="absolute bottom-0 left-0 w-40 h-40 bg-neon-purple rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        
+        <div class="relative z-10">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 class="text-4xl font-bold mb-4">
+                        <span class="gradient-text">{{ __('dashboard.real_time_analytics_dashboard') }}</span>
+                    </h1>
+                    <p class="text-xl text-gray-300">
+                        {{ __('dashboard.real_time_data') }}
+                    </p>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button onclick="refreshAnalytics()" class="px-6 py-3 bg-gradient-to-r from-purple-glow to-neon-purple rounded-lg text-white font-semibold hover:from-purple-dark hover:to-neon-purple transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>{{ __('dashboard.refresh') }}</span>
+                    </button>
+                    <button onclick="exportAnalytics()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 rounded-lg text-white font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>{{ __('dashboard.export') }}</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -35,7 +47,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-purple-glow/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-glow/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Active Sessions</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.active_sessions') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white" id="activeSessions">-</p>
                 </div>
                 <div class="p-3 bg-purple-glow/20 rounded-full">
@@ -45,7 +57,7 @@
                 </div>
             </div>
             <div class="mt-4 flex items-center text-sm">
-                <span class="text-gray-400" id="activeSessionsChange">Loading...</span>
+                <span class="text-gray-400" id="activeSessionsChange">{{ __('dashboard.loading') }}</span>
             </div>
         </div>
 
@@ -53,7 +65,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Interactions (Last Hour)</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.interactions_last_hour') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white" id="interactionsLastHour">-</p>
                 </div>
                 <div class="p-3 bg-green-500/20 rounded-full">
@@ -63,7 +75,7 @@
                 </div>
             </div>
             <div class="mt-4 flex items-center text-sm">
-                <span class="text-gray-400" id="interactionsChange">Loading...</span>
+                <span class="text-gray-400" id="interactionsChange">{{ __('dashboard.loading') }}</span>
             </div>
         </div>
 
@@ -71,7 +83,7 @@
         <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Conversion Rate</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.conversion_rate') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white" id="conversionRate">-</p>
                 </div>
                 <div class="p-3 bg-blue-500/20 rounded-full">
@@ -81,15 +93,15 @@
                 </div>
             </div>
             <div class="mt-4 flex items-center text-sm">
-                <span class="text-gray-400" id="conversionChange">Loading...</span>
+                <span class="text-gray-400" id="conversionChange">{{ __('dashboard.loading') }}</span>
             </div>
         </div>
 
         <!-- Avg Session Duration -->
-        <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/10">
+        <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Avg Session Duration</p>
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.avg_session_duration') }}</p>
                     <p class="mt-2 text-3xl font-bold text-white" id="avgSessionDuration">-</p>
                 </div>
                 <div class="p-3 bg-yellow-500/20 rounded-full">
@@ -104,80 +116,7 @@
         </div>
     </div>
 
-    <!-- Commerce Stats Row -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Cart Statistics -->
-        <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Toplam Sepet</p>
-                    <p class="mt-2 text-3xl font-bold text-white" id="totalCarts">-</p>
-                </div>
-                <div class="p-3 bg-blue-500/20 rounded-full">
-                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="mt-4 flex items-center text-sm">
-                <span class="text-gray-400" id="cartChange">Loading...</span>
-            </div>
-        </div>
 
-        <!-- Active Carts -->
-        <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Aktif Sepet</p>
-                    <p class="mt-2 text-3xl font-bold text-white" id="activeCarts">-</p>
-                </div>
-                <div class="p-3 bg-green-500/20 rounded-full">
-                    <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="mt-4 flex items-center text-sm">
-                <span class="text-gray-400" id="activeCartChange">Loading...</span>
-            </div>
-        </div>
-
-        <!-- Total Orders -->
-        <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Toplam Sipariş</p>
-                    <p class="mt-2 text-3xl font-bold text-white" id="totalOrders">-</p>
-                </div>
-                <div class="p-3 bg-purple-500/20 rounded-full">
-                    <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="mt-4 flex items-center text-sm">
-                <span class="text-gray-400" id="orderChange">Loading...</span>
-            </div>
-        </div>
-
-        <!-- Total Revenue -->
-        <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/10">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Toplam Gelir</p>
-                    <p class="mt-2 text-3xl font-bold text-white" id="totalRevenue">-</p>
-                </div>
-                <div class="p-3 bg-yellow-500/20 rounded-full">
-                    <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="mt-4 flex items-center text-sm">
-                <span class="text-gray-400" id="revenueChange">Loading...</span>
-            </div>
-        </div>
-    </div>
 
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -296,11 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up real-time updates
     setInterval(function() {
         loadAnalyticsData();
-        loadCommerceStats();
     }, 30000); // Update every 30 seconds
-    
-    // Load commerce stats on page load
-    loadCommerceStats();
     
 
 });
@@ -441,46 +376,7 @@ async function loadAnalyticsData() {
     }
 }
 
-async function loadCommerceStats() {
-    try {
-        const response = await fetch('/dashboard/api-settings/stats', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            updateCommerceStats(data.data);
-        } else {
-            console.error('Error loading commerce stats:', data.message);
-        }
-    } catch (error) {
-        console.error('Error loading commerce stats:', error);
-    }
-}
 
-function updateCommerceStats(stats) {
-    // Update cart statistics
-    document.getElementById('totalCarts').textContent = stats.cart.total_carts;
-    document.getElementById('activeCarts').textContent = stats.cart.active_carts;
-    
-    // Update order statistics
-    document.getElementById('totalOrders').textContent = stats.orders.total_orders;
-    document.getElementById('totalRevenue').textContent = '$' + parseFloat(stats.orders.total_revenue).toFixed(2);
-    
-    // Update change indicators (mock data for now)
-    document.getElementById('cartChange').textContent = '↗️ +12% from last week';
-    document.getElementById('activeCartChange').textContent = '↗️ +8% from last week';
-    document.getElementById('orderChange').textContent = '↗️ +15% from last week';
-    document.getElementById('revenueChange').textContent = '↗️ +22% from last week';
-}
 
 function updateDashboard(data) {
     // Update main metrics

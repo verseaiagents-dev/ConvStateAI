@@ -2,8 +2,17 @@
 
 namespace App\Services\KnowledgeBase;
 
+use App\Services\KnowledgeBase\AIService;
+
 class ContentChunker
 {
+    private $aiService;
+
+    public function __construct(AIService $aiService)
+    {
+        $this->aiService = $aiService;
+    }
+
     /**
      * Token sayısını hesaplar - Merkezi boyut hesaplama metodu
      * İleride gerçek tokenizer bağlanabilir
@@ -39,7 +48,7 @@ class ContentChunker
     /**
      * Content'i chunk'lara böler - Gelişmiş algoritma
      */
-    public function chunkContent(string $content, array $config = []): array
+    public function chunkContent(string $content, $knowledgeBaseId = null, array $config = []): array
     {
         $chunks = [];
         $maxChunkSize = $config['max_chunk_size'] ?? 1000;
@@ -61,7 +70,7 @@ class ContentChunker
                 if (!empty($currentChunk) && $this->countTokens($currentChunk) >= $minChunkSize) {
                     // Chunk'ı kelime sınırlarında böl
                     $finalChunk = $this->trimToWordBoundary($currentChunk, $preserveWords);
-                    $chunks[] = $this->createChunk($finalChunk, $chunkIndex++);
+                    $chunks[] = $this->createChunk($finalChunk, $chunkIndex++, $knowledgeBaseId);
                     
                     // Overlap'i de kelime sınırlarında al
                     $currentChunk = $this->getSmartOverlap($currentChunk, $overlapSize, $preserveWords);
@@ -74,7 +83,7 @@ class ContentChunker
         // Son chunk'ı ekle
         if (!empty($currentChunk) && $this->countTokens(trim($currentChunk)) >= $minChunkSize) {
             $finalChunk = $this->trimToWordBoundary(trim($currentChunk), $preserveWords);
-            $chunks[] = $this->createChunk($finalChunk, $chunkIndex);
+            $chunks[] = $this->createChunk($finalChunk, $chunkIndex, $knowledgeBaseId);
         }
         
         return $chunks;
@@ -253,17 +262,28 @@ class ContentChunker
     /**
      * Chunk oluşturur
      */
-    private function createChunk(string $content, int $index): array
+    private function createChunk(string $content, int $index, $knowledgeBaseId = null): array
     {
-        return [
+        // Resim analizi yap
+        $imageAnalysis = $this->analyzeImagesInContent($content);
+        
+        $chunk = [
+            'content' => $content,
+            'content_type' => 'text',
             'chunk_index' => $index,
-            'content' => trim($content),
+            'word_count' => $this->countWords($content),
+            'chunk_size' => mb_strlen($content, 'UTF-8'),
             'content_hash' => hash('sha256', $content),
-            'chunk_size' => $this->countTokens($content),
-            'word_count' => str_word_count($content),
-            'content_type' => $this->detectContentType($content),
-            'metadata' => $this->extractMetadata($content)
+            'metadata' => [
+                'created_at' => now()->toISOString(),
+                'knowledge_base_id' => $knowledgeBaseId
+            ],
+            'has_images' => $imageAnalysis['has_images'],
+            'processed_images' => $imageAnalysis['processed_images'],
+            'image_vision' => $imageAnalysis['image_vision']
         ];
+        
+        return $chunk;
     }
 
     /**
@@ -639,7 +659,7 @@ class ContentChunker
             case 'xml':
                 return $this->chunkXmlContent($content, $config);
             default:
-                return $this->chunkContent($content, $config);
+                return $this->chunkContent($content, null, $config);
         }
     }
 
@@ -662,7 +682,7 @@ class ContentChunker
         $textContent = $this->xmlToText($xml);
         
         // Metin olarak chunk'la
-        return $this->chunkContent($textContent, $config);
+        return $this->chunkContent($textContent, null, $config);
     }
 
     /**
@@ -999,5 +1019,105 @@ class ContentChunker
         }
         
         return $filtered;
+    }
+
+    /**
+     * Content'te resim analizi yapar
+     */
+    private function analyzeImagesInContent(string $content): array
+    {
+        try {
+            // URL pattern'leri bul
+            $urlPatterns = [
+                '/https?:\/\/[^\s<>"]+\.(jpg|jpeg|png|gif|webp|svg)/i',
+                '/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i',
+                '/!\[([^\]]*)\]\(([^)]+)\)/i' // Markdown image syntax
+            ];
+            
+            $imageUrls = [];
+            foreach ($urlPatterns as $pattern) {
+                if (preg_match_all($pattern, $content, $matches)) {
+                    foreach ($matches[0] as $match) {
+                        // URL'yi temizle
+                        $url = $this->extractImageUrl($match);
+                        if ($url && filter_var($url, FILTER_VALIDATE_URL)) {
+                            $imageUrls[] = $url;
+                        }
+                    }
+                }
+            }
+            
+            if (empty($imageUrls)) {
+                return [
+                    'has_images' => false,
+                    'processed_images' => 0,
+                    'image_vision' => null
+                ];
+            }
+            
+            // AI servisi ile resim analizi yap
+            $imageVision = $this->aiService->analyzeImages($imageUrls);
+            
+            return [
+                'has_images' => true,
+                'processed_images' => count($imageUrls),
+                'image_vision' => $imageVision
+            ];
+            
+        } catch (\Exception $e) {
+            \Log::warning('Image analysis error: ' . $e->getMessage());
+            return [
+                'has_images' => false,
+                'processed_images' => 0,
+                'image_vision' => null
+            ];
+        }
+    }
+    
+    /**
+     * Resim URL'sini çıkarır
+     */
+    private function extractImageUrl(string $match): ?string
+    {
+        // HTML img tag'den
+        if (preg_match('/src=["\']([^"\']+)["\']/', $match, $matches)) {
+            return $matches[1];
+        }
+        
+        // Markdown image syntax'dan
+        if (preg_match('/!\[([^\]]*)\]\(([^)]+)\)/', $match, $matches)) {
+            return $matches[2];
+        }
+        
+        // Direkt URL'den
+        if (preg_match('/https?:\/\/[^\s<>"]+\.(jpg|jpeg|png|gif|webp|svg)/i', $match, $matches)) {
+            return $matches[0];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Kelime sayısını hesaplar
+     */
+    private function countWords(string $text): int
+    {
+        // Boş string kontrolü
+        if (empty(trim($text))) {
+            return 0;
+        }
+        
+        // Türkçe karakterleri destekleyen kelime sayımı
+        $words = preg_split('/\s+/', trim($text));
+        $wordCount = 0;
+        
+        foreach ($words as $word) {
+            // Sadece harf ve rakam içeren kelimeleri say
+            if (preg_match('/[a-zA-ZğüşıöçĞÜŞİÖÇ0-9]/', $word)) {
+                $wordCount++;
+            }
+        }
+        
+        return $wordCount;
     }
 }

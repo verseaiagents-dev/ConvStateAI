@@ -15,6 +15,7 @@ class EnhancedChatSession extends Model
     protected $fillable = [
         'session_id',
         'user_id',
+        'project_id',
         'intent_history',
         'chat_history',
         'daily_view_count',
@@ -100,6 +101,14 @@ class EnhancedChatSession extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Project ile ilişki
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /**

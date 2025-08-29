@@ -7,6 +7,7 @@ import GeneralMessage from './templates/GeneralMessage';
 import OrderMessage from './templates/OrderMessage';
 import CargoTrackingMessage from './templates/CargoTrackingMessage';
 import ShimmerMessage from './ShimmerMessage';
+import NoDataMessage from './templates/NoDataMessage';
 
 interface MessageItemProps {
   message: Message;
@@ -27,12 +28,32 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onProductClick, onFe
     switch (messageType) {
       case 'product_recommendation':
       case 'product_inquiry':
-      case 'product_search': // Eklendi
+      case 'category_browse': // Kategori tarama için eklendi
       case 'order_inquiry': // Now handles both order inquiry and recommendations
       case 'smart_recommendation':
       case 'trend_products':
       case 'contextual_recommendation':
       case 'category_recommendation':
+        return (
+          <ProductRecommendationMessage 
+            message={message}
+            onProductClick={onProductClick}
+            onFeedback={onFeedback}
+          />
+        );
+        
+      case 'product_search': // Ürün arama - ürün bulunamadığında NoDataMessage göster
+        // Ürün bulunamadığında NoDataMessage göster
+        const products = message.products || message.data?.products || [];
+        if (products.length === 0) {
+          return (
+            <NoDataMessage 
+              message={message}
+              onFeedback={onFeedback}
+            />
+          );
+        }
+        // Ürün varsa normal ProductRecommendationMessage göster
         return (
           <ProductRecommendationMessage 
             message={message}
@@ -49,8 +70,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onProductClick, onFe
           />
         );
         
-              case 'order_inquiry':
-        case 'order_tracking':
+              case 'order_tracking':
           return (
             <OrderMessage 
               message={message}

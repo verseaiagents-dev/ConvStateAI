@@ -34,36 +34,7 @@ class WidgetCustomizationController extends Controller
         ]);
     }
 
-    /**
-     * Update widget customization
-     */
-    public function updateCustomization(Request $request)
-    {
-        $request->validate([
-            'ai_name' => 'required|string|max:100',
-            'welcome_message' => 'required|string|max:1000',
-            'customization_data' => 'nullable|array'
-        ]);
-
-        $user = Auth::user();
-        
-        $customization = WidgetCustomization::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'ai_name' => $request->ai_name,
-                'welcome_message' => $request->welcome_message,
-                'customization_data' => $request->customization_data,
-                'is_active' => true
-            ]
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Widget özelleştirmeleri başarıyla güncellendi',
-            'data' => $customization
-        ]);
-    }
-
+ 
     /**
      * Get public widget customization data (for React app)
      */

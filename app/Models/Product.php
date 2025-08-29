@@ -31,6 +31,8 @@ class Product extends Model
         'weight',
         'dimensions',
         'stock_quantity',
+        'stock',
+        'profit_margin',
         'low_stock_threshold',
         'is_active',
         'is_featured',
@@ -60,6 +62,8 @@ class Product extends Model
         'weight' => 'decimal:3',
         'dimensions' => 'array',
         'stock_quantity' => 'integer',
+        'stock' => 'integer',
+        'profit_margin' => 'decimal:2',
         'low_stock_threshold' => 'integer',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
@@ -93,6 +97,21 @@ class Product extends Model
     public function subcategory(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'subcategory_id');
+    }
+
+
+
+    public function getStockAttribute()
+    {
+        return $this->stock_quantity ?? 0;
+    }
+
+    public function getProfitMarginAttribute()
+    {
+        if ($this->cost_price && $this->price) {
+            return round((($this->cost_price - $this->price) / $this->cost_price) * 100, 2);
+        }
+        return 20.0; // Default 20%
     }
 
     public function reviews(): HasMany

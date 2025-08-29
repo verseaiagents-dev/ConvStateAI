@@ -48,13 +48,27 @@ const CargoTrackingMessage: React.FC<CargoTrackingMessageProps> = ({
     
     setIsTracking(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/cargo-tracking', {
-        method: 'POST',
+      // Widget ayarlarından API endpoint'i al
+      const widgetConfig = (window as any).widgetConfig;
+      const cargoTrackingEndpoint = widgetConfig?.apiEndpoints?.cargoTracking;
+      
+      if (!cargoTrackingEndpoint) {
+        // API endpoint tanımlanmamışsa "yakında açılacak" mesajı göster
+        setTrackingResult({
+          error: 'Bu özellik yakında açılacak',
+          feature_disabled: true
+        });
+        setIsTracking(false);
+        return;
+      }
+      
+      // API endpoint varsa normal sorgu yap
+      const response = await fetch(`${cargoTrackingEndpoint}?cargo_number=${encodeURIComponent(cargoNumber)}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-        },
-        body: JSON.stringify({ cargo_number: cargoNumber })
+        }
       });
 
       if (response.ok) {
@@ -126,14 +140,28 @@ const CargoTrackingMessage: React.FC<CargoTrackingMessageProps> = ({
         {/* Kargo takip sonucu */}
         {trackingResult && (
           <div className="cargo-tracking-result" style={{ 
-            backgroundColor: '#F9FAFB', 
+            backgroundColor: trackingResult.feature_disabled ? '#FEF3C7' : '#F9FAFB', 
             padding: '16px', 
             borderRadius: '8px',
-            border: '1px solid #E5E7EB',
+            border: `1px solid ${trackingResult.feature_disabled ? '#F59E0B' : '#E5E7EB'}`,
             marginBottom: '16px'
           }}>
             {trackingResult.error ? (
-              <p style={{ color: '#DC2626', margin: 0 }}>{trackingResult.error}</p>
+              <div style={{ textAlign: 'center' }}>
+                {trackingResult.feature_disabled ? (
+                  <>
+                    <div style={{ fontSize: '48px', marginBottom: '8px' }}>🚧</div>
+                    <p style={{ color: '#92400E', margin: '0 0 8px 0', fontWeight: '600' }}>
+                      Bu özellik yakında açılacak
+                    </p>
+                    <p style={{ color: '#92400E', margin: 0, fontSize: '14px' }}>
+                      Kargo takip özelliği geliştirme aşamasında
+                    </p>
+                  </>
+                ) : (
+                  <p style={{ color: '#DC2626', margin: 0 }}>{trackingResult.error}</p>
+                )}
+              </div>
             ) : (
               <div>
                 <h4 style={{ 

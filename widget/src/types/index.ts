@@ -18,6 +18,10 @@ export interface WidgetConfig {
     aiEnabled: boolean;
     eventTracking: boolean;
   };
+  apiEndpoints?: {
+    cargoTracking?: string;
+    orderTracking?: string;
+  };
   styling: {
     position: 'bottom-right' | 'bottom-left' | 'center';
     size: 'small' | 'medium' | 'large';

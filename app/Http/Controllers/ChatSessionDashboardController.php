@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\EnhancedChatSession;
 use App\Models\ProductInteraction;
+use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -13,18 +14,32 @@ class ChatSessionDashboardController extends Controller
     /**
      * Chat sessions listesi ve stats
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            // Stats hesapla
-            $stats = $this->calculateDashboardStats();
+            // Project ID parametresini al
+            $projectId = $request->query('project_id');
             
-            // Sessions listesi (paginated)
-            $sessions = EnhancedChatSession::with(['user', 'productInteractions'])
-                ->orderBy('last_activity', 'desc')
-                ->paginate(20);
+            // Proje ismini bul
+            $projectName = null;
+            if ($projectId) {
+                $project = Project::find($projectId);
+                $projectName = $project ? $project->name : null;
+            }
+            
+            // Stats hesapla (project bazlı veya genel)
+            $stats = $this->calculateDashboardStats($projectId);
+            
+            // Sessions listesi (project bazlı filtreleme ile)
+            $query = EnhancedChatSession::with(['user', 'productInteractions', 'project']);
+            
+            if ($projectId) {
+                $query->where('project_id', $projectId);
+            }
+            
+            $sessions = $query->orderBy('last_activity', 'desc')->paginate(20);
 
-            return view('dashboard.chat-sessions', compact('sessions', 'stats'));
+            return view('dashboard.chat-sessions', compact('sessions', 'stats', 'projectId', 'projectName'));
             
         } catch (\Exception $e) {
             \Log::error('Chat session dashboard error: ' . $e->getMessage());
@@ -84,46 +99,74 @@ class ChatSessionDashboardController extends Controller
     /**
      * Dashboard stats hesapla
      */
-    private function calculateDashboardStats(): array
+    private function calculateDashboardStats(?int $projectId = null): array
     {
         $now = Carbon::now();
         $today = Carbon::today();
         $thisWeek = Carbon::now()->startOfWeek();
         $thisMonth = Carbon::now()->startOfMonth();
 
+        // Base query
+        $baseQuery = EnhancedChatSession::query();
+        
+        // Project bazlı filtreleme
+        if ($projectId) {
+            $baseQuery->where('project_id', $projectId);
+        }
+
         // Total sessions
-        $totalSessions = EnhancedChatSession::count();
+        $totalSessions = (clone $baseQuery)->count();
         
         // Active sessions today
-        $activeToday = EnhancedChatSession::whereDate('last_activity', $today)
+        $activeToday = (clone $baseQuery)
+            ->whereDate('last_activity', $today)
             ->where('status', 'active')
             ->count();
         
         // Total interactions today
-        $totalInteractionsToday = ProductInteraction::whereDate('timestamp', $today)->count();
+        $totalInteractionsToday = ProductInteraction::whereDate('timestamp', $today)
+            ->when($projectId, function($query) use ($projectId) {
+                $query->whereIn('session_id', function($subQuery) use ($projectId) {
+                    $subQuery->select('session_id')->from('enhanced_chat_sessions')->where('project_id', $projectId);
+                });
+            })->count();
         
         // Conversion rate today
         $conversionsToday = ProductInteraction::whereDate('timestamp', $today)
             ->whereIn('action', ['buy', 'add_to_cart'])
-            ->count();
+            ->when($projectId, function($query) use ($projectId) {
+                $query->whereIn('session_id', function($subQuery) use ($projectId) {
+                    $subQuery->select('session_id')->from('enhanced_chat_sessions')->where('project_id', $projectId);
+                });
+            })->count();
         
         $conversionRateToday = $totalInteractionsToday > 0 
             ? round(($conversionsToday / $totalInteractionsToday) * 100, 2) 
             : 0;
 
         // Weekly stats
-        $weeklySessions = EnhancedChatSession::where('created_at', '>=', $thisWeek)->count();
-        $weeklyInteractions = ProductInteraction::where('timestamp', '>=', $thisWeek)->count();
+        $weeklySessions = (clone $baseQuery)->where('created_at', '>=', $thisWeek)->count();
+        $weeklyInteractions = ProductInteraction::where('timestamp', '>=', $thisWeek)
+            ->when($projectId, function($query) use ($projectId) {
+                $query->whereIn('session_id', function($subQuery) use ($projectId) {
+                    $subQuery->select('session_id')->from('enhanced_chat_sessions')->where('project_id', $projectId);
+                });
+            })->count();
         
         // Monthly stats
-        $monthlySessions = EnhancedChatSession::where('created_at', '>=', $thisMonth)->count();
-        $monthlyInteractions = ProductInteraction::where('timestamp', '>=', $thisMonth)->count();
+        $monthlySessions = (clone $baseQuery)->where('created_at', '>=', $thisMonth)->count();
+        $monthlyInteractions = ProductInteraction::where('timestamp', '>=', $thisMonth)
+            ->when($projectId, function($query) use ($projectId) {
+                $query->whereIn('session_id', function($subQuery) use ($projectId) {
+                    $subQuery->select('session_id')->from('enhanced_chat_sessions')->where('project_id', $projectId);
+                });
+            })->count();
 
         // Intent distribution
-        $intentStats = $this->getIntentDistribution();
+        $intentStats = $this->getIntentDistribution($projectId);
         
         // Action distribution
-        $actionStats = $this->getActionDistribution();
+        $actionStats = $this->getActionDistribution($projectId);
 
         return [
             'overview' => [
@@ -146,9 +189,15 @@ class ChatSessionDashboardController extends Controller
     /**
      * Intent distribution hesapla
      */
-    private function getIntentDistribution(): array
+    private function getIntentDistribution(?int $projectId = null): array
     {
-        $sessions = EnhancedChatSession::whereNotNull('intent_history')->get();
+        $query = EnhancedChatSession::whereNotNull('intent_history');
+        
+        if ($projectId) {
+            $query->where('project_id', $projectId);
+        }
+        
+        $sessions = $query->get();
         $intentCounts = [];
         
         foreach ($sessions as $session) {
@@ -170,10 +219,17 @@ class ChatSessionDashboardController extends Controller
     /**
      * Action distribution hesapla
      */
-    private function getActionDistribution(): array
+    private function getActionDistribution(?int $projectId = null): array
     {
-        return ProductInteraction::select('action', DB::raw('count(*) as count'))
-            ->groupBy('action')
+        $query = ProductInteraction::select('action', DB::raw('count(*) as count'));
+        
+        if ($projectId) {
+            $query->whereIn('session_id', function($subQuery) use ($projectId) {
+                $subQuery->select('session_id')->from('enhanced_chat_sessions')->where('project_id', $projectId);
+            });
+        }
+        
+        return $query->groupBy('action')
             ->orderBy('count', 'desc')
             ->pluck('count', 'action')
             ->toArray();

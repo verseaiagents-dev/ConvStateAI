@@ -59,15 +59,36 @@ const OrderMessage: React.FC<OrderMessageProps> = ({ message, onFeedback }) => {
   const handleOrderNumberSubmit = async () => {
     if (orderNumber.trim()) {
       try {
-        // Call the new order tracking API endpoint
-        const response = await fetch('/api/order-tracking', {
-          method: 'POST',
+        // Widget ayarlarından API endpoint'i al
+        const widgetConfig = (window as any).widgetConfig;
+        const orderTrackingEndpoint = widgetConfig?.apiEndpoints?.orderTracking;
+        
+        if (!orderTrackingEndpoint) {
+          // API endpoint tanımlanmamışsa "yakında açılacak" mesajı göster
+          setOrderData({
+            order_id: orderNumber,
+            status: 'feature_disabled',
+            order_date: new Date().toISOString(),
+            items: [],
+            shipping: {
+              courier: 'N/A',
+              tracking_number: 'N/A',
+              last_update: 'N/A',
+              location: 'N/A',
+              estimated_delivery: 'N/A'
+            },
+            message: 'Bu özellik yakında açılacak'
+          });
+          setShowOrderDetails(true);
+          return;
+        }
+        
+        // API endpoint varsa normal sorgu yap
+        const response = await fetch(`${orderTrackingEndpoint}?order_number=${encodeURIComponent(orderNumber)}`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            order_number: orderNumber
-          })
+          }
         });
 
         if (response.ok) {
@@ -235,7 +256,19 @@ const OrderMessage: React.FC<OrderMessageProps> = ({ message, onFeedback }) => {
       <div className="message agent-message">
         <div className="message-content-wrapper">
           <div className="order-tracking-details">
-            <h3>Sipariş Takip Bilgileri</h3>
+            {orderData.status === 'feature_disabled' ? (
+              <div className="feature-disabled-message">
+                <div style={{ fontSize: '48px', marginBottom: '16px', textAlign: 'center' }}>🚧</div>
+                <h3 style={{ textAlign: 'center', color: '#92400E', marginBottom: '16px' }}>
+                  Bu özellik yakında açılacak
+                </h3>
+                <p style={{ textAlign: 'center', color: '#92400E', fontSize: '14px', margin: 0 }}>
+                  Sipariş takip özelliği geliştirme aşamasında
+                </p>
+              </div>
+            ) : (
+              <>
+                <h3>Sipariş Takip Bilgileri</h3>
             
             <div className="order-header">
               <div className="order-id">Sipariş No: {orderData.order_id}</div>
@@ -276,6 +309,8 @@ const OrderMessage: React.FC<OrderMessageProps> = ({ message, onFeedback }) => {
             <div className="order-message">
               <p>{orderData.message}</p>
             </div>
+              </>
+            )}
           </div>
         </div>
         

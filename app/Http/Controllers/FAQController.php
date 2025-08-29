@@ -20,6 +20,16 @@ class FAQController extends Controller
             try {
                 $siteId = $request->get('site_id', 1); // Default site ID
                 
+                // Site'in var olup olmadığını kontrol et
+                $site = Site::find($siteId);
+                if (!$site) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Belirtilen site bulunamadı',
+                        'data' => []
+                    ], 404);
+                }
+                
                 $faqs = FAQ::where('site_id', $siteId)
                     ->active()
                     ->ordered()

@@ -14,6 +14,8 @@ Route::prefix('ai')->group(function () {
     Route::get('/test-connection', [AIController::class, 'testConnection']);
 });
 
+
+
 // Chat Routes
 Route::post('/chat', [App\Http\Controllers\TestAPI::class, 'chat'])->name('api.chat');
 Route::get('/chat/{session_id}',  [TestAPI::class, 'getChatSession']);
@@ -44,6 +46,7 @@ Route::prefix('knowledge-base')->middleware(['web'])->group(function () {
     Route::get('/{id}', [KnowledgeBaseController::class, 'show']);
     Route::get('/{id}/detail', [KnowledgeBaseController::class, 'getDetail']);
     Route::get('/{id}/chunks', [KnowledgeBaseController::class, 'getChunks']);
+    Route::post('/{id}/refresh-chunks', [KnowledgeBaseController::class, 'refreshChunks']);
     Route::delete('/{id}', [KnowledgeBaseController::class, 'destroy']);
     Route::post('/{id}/optimize-faq', [KnowledgeBaseController::class, 'optimizeFAQ']);
     

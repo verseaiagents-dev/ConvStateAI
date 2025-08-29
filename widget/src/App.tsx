@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import './App.css';
 import ChatContainer from './components/chatbot/ChatContainer';
+import TestCampaignTab from './components/TestCampaignTab';
 import { WidgetConfig } from './types';
 
 function App() {
+  const [showTestTab, setShowTestTab] = useState(false);
   
   // Sample configuration
   const config: WidgetConfig = {
@@ -41,10 +43,52 @@ function App() {
     // Handle feedback here
   };
 
-
-
   return (
     <>
+      {/* Test Tab Toggle Button */}
+      <div style={{ 
+        position: 'fixed', 
+        top: '20px', 
+        left: '20px', 
+        zIndex: 1000,
+        backgroundColor: '#007bff',
+        color: 'white',
+        padding: '10px 15px',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        border: 'none',
+        fontSize: '14px'
+      }}>
+        <button 
+          onClick={() => setShowTestTab(!showTestTab)}
+          style={{
+            backgroundColor: 'transparent',
+            color: 'white',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          {showTestTab ? '❌ Hide Test' : '🧪 Show Test'}
+        </button>
+      </div>
+
+      {/* Test Tab */}
+      {showTestTab && (
+        <div style={{ 
+          position: 'fixed', 
+          top: '0', 
+          left: '0', 
+          width: '100%', 
+          height: '100%', 
+          backgroundColor: 'rgba(0,0,0,0.8)', 
+          zIndex: 999,
+          overflow: 'auto'
+        }}>
+          <TestCampaignTab />
+        </div>
+      )}
+
       {/* Widget - Always render ChatContainer, let it handle its own visibility */}
       <ChatContainer 
         config={config}

@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('personal_token', 64)->unique()->nullable()->after('email');
-            $table->timestamp('token_expires_at')->nullable()->after('personal_token');
+            $table->timestamp('last_login_at')->nullable()->after('remember_token');
         });
     }
 
@@ -23,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['personal_token', 'token_expires_at']);
+            $table->dropColumn('last_login_at');
         });
     }
 };

@@ -1,35 +1,47 @@
 @extends('layouts.dashboard')
 
-@section('title', 'SSS Yönetimi')
+@section('title', __('dashboard.faq_management'))
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-4xl font-bold gradient-text">SSS Yönetimi</h1>
-            <p class="text-gray-400 mt-2">Sık sorulan soruları yönetin ve düzenleyin</p>
+    <!-- FAQ Management Header -->
+    <div class="glass-effect rounded-2xl p-8 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-glow rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        <div class="absolute bottom-0 left-0 w-40 h-40 bg-neon-purple rounded-full mix-blend-multiply filter blur-xl opacity-20"></div>
+        
+        <div class="relative z-10">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 class="text-4xl font-bold mb-4">
+                        <span class="gradient-text">{{ __('dashboard.faq_management') }}</span>
+                    </h1>
+                    <p class="text-xl text-gray-300">
+                        {{ __('dashboard.faq_management_description') }}
+                    </p>
+                </div>
+                
+                <button onclick="openCreateModal()" class="px-6 py-3 bg-gradient-to-r from-purple-glow to-neon-purple rounded-lg text-white font-semibold hover:from-purple-dark hover:to-neon-purple transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <span>{{ __('dashboard.create_new_faq') }}</span>
+                </button>
+            </div>
         </div>
-        <button onclick="openCreateModal()" class="px-6 py-3 bg-gradient-to-r from-purple-glow to-neon-purple rounded-xl text-white font-semibold hover:from-purple-dark hover:to-purple-glow transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            <span>Yeni SSS</span>
-        </button>
     </div>
 
     <!-- Search Bar -->
     <div class="mb-8">
         <div class="max-w-md">
-            <label for="search" class="sr-only">SSS Ara</label>
+            <label for="search" class="sr-only">{{ __('dashboard.search_faqs') }}</label>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                 </div>
-                <input type="text" id="search" placeholder="SSS ara..." class="form-input w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+                <input type="text" id="search" placeholder="{{ __('dashboard.search_faqs') }}..." class="form-input w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
             </div>
         </div>
     </div>
@@ -40,12 +52,12 @@
             <table class="min-w-full">
                 <thead class="bg-gradient-to-r from-gray-800 to-gray-900">
                     <tr>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">Soru</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">Kategori</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">Kısa Cevap</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">Durum</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">Sıralama</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">İşlemler</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">{{ __('dashboard.question') }}</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">{{ __('dashboard.category') }}</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">{{ __('dashboard.short_answer') }}</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">{{ __('dashboard.status') }}</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">{{ __('dashboard.sort_order') }}</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">{{ __('dashboard.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-700" id="faqsTableBody">
@@ -62,7 +74,7 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span class="text-gray-300">SSS yükleniyor...</span>
+            <span class="text-gray-300">{{ __('dashboard.faqs_loading') }}</span>
         </div>
     </div>
 
@@ -71,13 +83,13 @@
         <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
-        <h3 class="text-xl font-semibold text-white mb-2">Henüz SSS yok</h3>
-        <p class="text-gray-400 mb-6">İlk SSS'nizi oluşturmaya başlayın ve müşteri sorularını yanıtlayın.</p>
+        <h3 class="text-xl font-semibold text-white mb-2">{{ __('dashboard.no_faqs_yet') }}</h3>
+        <p class="text-gray-400 mb-6">{{ __('dashboard.create_first_faq_description') }}</p>
         <button onclick="openCreateModal()" class="px-6 py-3 bg-gradient-to-r from-purple-glow to-neon-purple rounded-xl text-white font-semibold hover:from-purple-dark hover:to-purple-glow transition-all duration-300 transform hover:scale-105 inline-flex items-center space-x-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
-            <span>İlk SSS'nizi Oluşturun</span>
+            <span>{{ __('dashboard.create_first_faq') }}</span>
         </button>
     </div>
 </div>

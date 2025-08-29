@@ -3,6 +3,7 @@ import { MessageListProps } from '../../types';
 import MessageItem from './MessageItem';
 import TTSButton from './TTSButton';
 import { useChat } from '../../hooks/useChat';
+import ShimmerMessage from './ShimmerMessage';
 
 const MessageList: React.FC<MessageListProps> = ({ messages, onProductClick, onFeedback, welcomeMessage: customWelcomeMessage }) => {
   const { isTyping, chatContentRef } = useChat();
@@ -32,13 +33,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onProductClick, onF
       <div className="agent-avatar">
         <img src="/imgs/ai-conversion-logo-small.svg" alt="AI Conversion Agent" />
       </div>
-      <div className="message agent-message">
-        <div className="typing-indicator">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
+      <ShimmerMessage type="general" />
     </div>
   ) : null;
 

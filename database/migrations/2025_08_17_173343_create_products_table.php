@@ -32,6 +32,8 @@ return new class extends Migration
             $table->decimal('weight', 8, 3)->nullable();
             $table->json('dimensions')->nullable(); // {length, width, height, unit}
             $table->integer('stock_quantity')->default(0);
+            $table->integer('stock')->default(0);
+            $table->decimal('profit_margin', 5, 2)->default(20.00);
             $table->integer('low_stock_threshold')->default(5);
             $table->boolean('is_active')->default(true);
             $table->boolean('is_featured')->default(false);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,6 +32,8 @@
                 }
             }
         }
+
+
     </script>
     <style>
         .gradient-text {
@@ -185,6 +187,79 @@
             left: 50%;
             transform: translateX(-50%);
         }
+
+        /* Plan Tooltip Styles */
+        .plan-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .plan-tooltip .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            z-index: 1000;
+            background: rgba(31, 41, 55, 0.98);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(75, 85, 99, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: normal;
+            font-size: 13px;
+            color: white;
+            min-width: 280px;
+            transform: translateY(-10px);
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+        }
+        
+        .plan-tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .plan-tooltip .tooltip-arrow {
+            position: absolute;
+            top: -6px;
+            left: 20px;
+            width: 12px;
+            height: 12px;
+            background: rgba(31, 41, 55, 0.98);
+            border-left: 1px solid rgba(75, 85, 99, 0.6);
+            border-top: 1px solid rgba(75, 85, 99, 0.6);
+            transform: rotate(45deg);
+        }
+
+        /* Plan Button Hover Effects */
+        .plan-button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .plan-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .plan-button:hover::before {
+            left: 100%;
+        }
+        
+        .plan-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
         
         @media (min-width: 768px) {
             .sidebar.closed {
@@ -213,13 +288,105 @@
         @auth
         <div class="p-6 border-b border-gray-800 flex-shrink-0">
             <div class="flex items-center space-x-3">
-                                    <img src="{{ asset('imgs/ai-conversion-logo.svg') }}" alt="ConvStateAI Logo" class="w-12 h-12">
-                <div>
+                <img src="{{ asset('imgs/ai-conversion-logo.svg') }}" alt="ConvStateAI Logo" class="w-12 h-12">
+                <div class="flex-1">
                     <h3 class="font-semibold text-white">{{ auth()->user()->getDisplayName() }}</h3>
-                    <p class="text-sm text-gray-400">{{ auth()->user()->email }}</p>
-                    @if(auth()->user()->isAdmin())
-                        <span class="inline-block px-2 py-1 text-xs bg-purple-glow/20 text-purple-glow rounded-full mt-1">Admin</span>
-                    @endif
+                    <div class="flex items-center space-x-3 mt-1">
+                        <!-- Plan Info with Tooltip -->
+                        <div class="plan-tooltip">
+                            <button class="plan-button flex items-center space-x-2 px-3 py-1 text-xs bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-full transition-colors border border-purple-500/30">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Planım</span>
+                            </button>
+                            
+                            <!-- Tooltip Content -->
+                            <div class="tooltip-content">
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-sm font-semibold text-white">Mevcut Plan</h4>
+                                        @if(auth()->user()->hasActiveSubscription())
+                                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
+                                                Aktif
+                                            </span>
+                                        @else
+                                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-500/20 text-red-400">
+                                                Plan Yok
+                                            </span>
+                                        @endif
+                                    </div>
+                                    
+                                    @if(auth()->user()->hasActiveSubscription())
+                                        @php
+                                            $subscription = auth()->user()->activeSubscription;
+                                            $plan = $subscription->plan;
+                                        @endphp
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-400">Plan:</span>
+                                                <span class="text-white font-medium">{{ $plan->name }}</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-400">Kalan Süre:</span>
+                                                <span class="text-white">{{ $subscription->days_remaining }} gün</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-400">Bitiş:</span>
+                                                <span class="text-white">{{ $subscription->end_date->format('d.m.Y') }}</span>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <p class="text-gray-300 text-sm">Dashboard özelliklerini kullanmak için bir plan seçin.</p>
+                                    @endif
+                                    
+                                    <div class="pt-2">
+                                        <a href="{{ route('dashboard.subscription.index') }}" class="w-full flex items-center justify-center px-3 py-2 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors">
+                                            @if(auth()->user()->hasActiveSubscription())
+                                                Planı Yönet
+                                            @else
+                                                Plan Seç
+                                            @endif
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tooltip Arrow -->
+                                <div class="tooltip-arrow"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Language Switcher -->
+                        <div class="relative">
+                            <button id="language-dropdown" class="flex items-center space-x-1 px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-full transition-colors">
+                                <span class="w-4 h-4">
+                                    @if(app()->getLocale() == 'tr')
+                                        🇹🇷
+                                    @else
+                                        🇺🇸
+                                    @endif
+                                </span>
+                                <span>{{ strtoupper(app()->getLocale()) }}</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            
+                            <div id="language-menu" class="absolute right-0 mt-2 w-32 bg-gray-800 border border-gray-700 rounded-lg shadow-lg hidden z-50">
+                                <form method="POST" action="{{ route('change-language') }}" class="p-1">
+                                    @csrf
+                                    <button type="submit" name="language" value="tr" class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md flex items-center space-x-2">
+                                        <span>🇹🇷</span>
+                                        <span>TR</span>
+                                    </button>
+                                    <button type="submit" name="language" value="en" class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md flex items-center space-x-2">
+                                        <span>🇺🇸</span>
+                                        <span>EN</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -228,75 +395,40 @@
         <!-- Scrollable Navigation Container -->
         <div class="flex-1 overflow-y-auto overflow-x-hidden">
             <nav class="p-6 space-y-2">
-            <a href="{{ route('dashboard') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
+            <a href="{{ route('dashboard.projects') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.projects*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
                 </svg>
-                <span>Dashboard</span>
+                <span>Projelerim</span>
             </a>
 
-            <a href="{{ route('dashboard.profile') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.profile*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                <span>Profil</span>
-            </a>
 
-            <a href="{{ route('dashboard.knowledge-base') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.knowledge-base*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                </svg>
-                <span>Bilgi Tabanı</span>
-            </a>
+
+
 
             <a href="{{ route('dashboard.chat-sessions') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.chat-sessions*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                 </svg>
-                <span>Chat Sessions</span>
+                <span>{{ __('dashboard.chat_sessions') }}</span>
             </a>
-            <a href="{{ route('dashboard.campaigns.index') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.campaigns*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
-               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-               </svg>
-               <span>Kampanya Yönetimi</span>
-           </a>
-           
-           <a href="{{ route('dashboard.faqs.index') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.faqs*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
-               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-               </svg>
-               <span>SSS Yönetimi</span>
-           </a>
-           
-           <a href="{{ route('dashboard.widget-design') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.widget-design*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
-               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
-               </svg>
-               <span>Widget Tasarımı</span>
-           </a>
+
             <a href="{{ route('dashboard.analytics') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.analytics*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                 </svg>
-                <span>Analytics</span>
+                <span>{{ __('dashboard.analytics') }}</span>
             </a>
 
-            <a href="{{ route('dashboard.api-settings') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.api-settings*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                <span>API Ayarları</span>
-            </a>
+
 
             <a href="{{ route('dashboard.settings') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.settings*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
-                <span>Ayarlar</span>
+                <span>{{ __('dashboard.settings') }}</span>
             </a>
 
             <!-- Management Section -->
@@ -312,7 +444,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
-                    <span>Çıkış Yap</span>
+                    <span>{{ __('app.logout') }}</span>
                 </button>
             </form>
         </div>
@@ -330,7 +462,7 @@
                 </button>
                 
                 <div class="flex items-center space-x-4">
-                    <a href="{{ route('admin.dashboard') }}" class="text-blue-400 hover:text-blue-300 transition-colors">Admin Paneline Geç</a>
+                    <a href="{{ route('admin.dashboard') }}" class="text-blue-400 hover:text-blue-300 transition-colors">{{ __('app.admin_panel') }}</a>
                 </div>
             </div>
         </div>
@@ -349,12 +481,19 @@
                 </div>
             @endif
 
+            <!-- Subscription Check Component -->
+            @unless(request()->routeIs('dashboard.subscription.*') || request()->routeIs('subscription.expired'))
+                @include('components.subscription-check')
+            @endunless
+
             @yield('content')
         </main>
     </div>
 
     <!-- Mobile Overlay -->
     <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-40 md:hidden hidden"></div>
+
+
 
     <script>
         // Sidebar toggle for mobile
@@ -386,6 +525,33 @@
                 sidebar.classList.add('closed');
             }
         });
+
+        // Language dropdown functionality
+        const languageDropdown = document.getElementById('language-dropdown');
+        const languageMenu = document.getElementById('language-menu');
+
+        if (languageDropdown && languageMenu) {
+            languageDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                languageMenu.classList.toggle('hidden');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!languageDropdown.contains(e.target) && !languageMenu.contains(e.target)) {
+                    languageMenu.classList.add('hidden');
+                }
+            });
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    languageMenu.classList.add('hidden');
+                }
+            });
+        }
+
+
     </script>
     
     @stack('scripts')

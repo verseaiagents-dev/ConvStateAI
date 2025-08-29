@@ -40,20 +40,43 @@ const FAQTab: React.FC<FAQTabProps> = ({ isVisible, onClose }) => {
       
       // API endpoint'i - production'da gerçek URL kullanın
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/api/faqs?site_id=1`);
+      
+      const response = await fetch(`${apiUrl}/api/faqs?site_id=1`, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
-        throw new Error('SSS yüklenirken hata oluştu');
+        if (response.status === 404) {
+          // Site bulunamadı veya FAQ yok
+          setFaqs([]);
+          setError(null);
+          return;
+        }
+        const errorText = await response.text();
+        console.error('Error response text:', errorText);
+        throw new Error(`SSS yüklenirken hata oluştu: ${response.status}`);
       }
       
-      const result = await response.json();
+      const responseText = await response.text();
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error('API response JSON formatında değil');
+      }
       
       if (result.success) {
-        setFaqs(result.data);
+        setFaqs(result.data || []);
       } else {
         setError(result.message || 'SSS yüklenemedi');
       }
     } catch (err) {
+      console.error('FAQ loading error:', err);
       setError(err instanceof Error ? err.message : 'Bilinmeyen hata oluştu');
     } finally {
       setLoading(false);
@@ -173,7 +196,12 @@ const FAQTab: React.FC<FAQTabProps> = ({ isVisible, onClose }) => {
     );
   }
 
-  if (faqs.length === 0) {
+  // Debug: faqs state'ini kontrol et
+  console.log('FAQs state:', faqs);
+  console.log('FAQs length:', faqs?.length);
+  console.log('FAQs type:', typeof faqs);
+  
+  if (!faqs || faqs.length === 0) {
     return (
       <div className="campaign-tab-content">
         <div className="campaign-content">
@@ -181,7 +209,7 @@ const FAQTab: React.FC<FAQTabProps> = ({ isVisible, onClose }) => {
             <div className="text-center py-8">
               <div className="text-gray-400 text-6xl mb-4">❓</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz SSS Yok</h3>
-              <p className="text-gray-500">Bilgiler yakında yüklenecek</p>
+              <p className="text-gray-500">Şu anda sık sorulan soru bulunmuyor. Yeni SSS'ler eklendiğinde burada görünecek.</p>
             </div>
           </div>
         </div>

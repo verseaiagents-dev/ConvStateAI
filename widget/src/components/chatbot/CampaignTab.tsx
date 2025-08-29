@@ -40,20 +40,43 @@ const CampaignTab: React.FC<CampaignTabProps> = ({ isVisible, onClose }) => {
       
       // API endpoint'i - production'da gerçek URL kullanın
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/api/campaigns?site_id=1`);
+      
+      const response = await fetch(`${apiUrl}/api/campaigns?site_id=1`, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
-        throw new Error('Kampanyalar yüklenirken hata oluştu');
+        if (response.status === 404) {
+          // Site bulunamadı veya kampanya yok
+          setCampaigns([]);
+          setError(null);
+          return;
+        }
+        const errorText = await response.text();
+        console.error('Error response text:', errorText);
+        throw new Error(`Kampanyalar yüklenirken hata oluştu: ${response.status}`);
       }
       
-      const result = await response.json();
+      const responseText = await response.text();
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error('API response JSON formatında değil');
+      }
       
       if (result.success) {
-        setCampaigns(result.data);
+        setCampaigns(result.data || []);
       } else {
         setError(result.message || 'Kampanyalar yüklenemedi');
       }
     } catch (err) {
+      console.error('Campaign loading error:', err);
       setError(err instanceof Error ? err.message : 'Bilinmeyen hata oluştu');
     } finally {
       setLoading(false);
@@ -148,7 +171,12 @@ const CampaignTab: React.FC<CampaignTabProps> = ({ isVisible, onClose }) => {
     );
   }
 
-  if (campaigns.length === 0) {
+  // Debug: campaigns state'ini kontrol et
+  console.log('Campaigns state:', campaigns);
+  console.log('Campaigns length:', campaigns?.length);
+  console.log('Campaigns type:', typeof campaigns);
+  
+  if (!campaigns || campaigns.length === 0) {
     return (
       <div className="campaign-tab-content">
         <div className="campaign-content">
@@ -156,7 +184,7 @@ const CampaignTab: React.FC<CampaignTabProps> = ({ isVisible, onClose }) => {
             <div className="text-center py-8">
               <div className="text-gray-400 text-6xl mb-4">📢</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz Kampanya Yok</h3>
-              <p className="text-gray-500">Bilgiler yakında yüklenecek</p>
+              <p className="text-gray-500">Şu anda aktif kampanya bulunmuyor. Yeni kampanyalar eklendiğinde burada görünecek.</p>
             </div>
           </div>
         </div>
