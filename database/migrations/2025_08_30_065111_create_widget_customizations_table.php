@@ -16,10 +16,23 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('ai_name', 100)->default('Kadir AI');
             $table->text('welcome_message')->default('Merhaba ben Kadir, senin dijital asistanınım. Sana nasıl yardımcı olabilirim?');
+            $table->string('primary_color', 7)->default('#007bff'); // Hex color code
+            $table->string('secondary_color', 7)->default('#6c757d');
+            $table->string('font_family', 50)->default('Arial, sans-serif');
+            $table->integer('font_size')->default(14);
+            $table->boolean('show_avatar')->default(true);
+            $table->string('avatar_url')->nullable();
             $table->json('customization_data')->nullable();
+            $table->json('chat_settings')->nullable(); // Chat behavior settings
             $table->boolean('is_active')->default(true);
+            $table->timestamp('last_used_at')->nullable();
             $table->timestamps();
             
+            // Indexes for better performance
+            $table->index(['user_id', 'is_active']);
+            $table->index('last_used_at');
+            
+            // Foreign key constraint
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->unique('user_id');
         });

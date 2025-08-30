@@ -24,7 +24,7 @@ class DashboardController extends Controller
         // Dashboard istatistikleri
         $stats = [
             'total_projects' => Project::where('created_by', $user->id)->count(),
-            'total_knowledge_bases' => KnowledgeBase::where('project_id', function($query) use ($user) {
+            'total_knowledge_bases' => KnowledgeBase::whereIn('project_id', function($query) use ($user) {
                 $query->select('id')->from('projects')->where('created_by', $user->id);
             })->count(),
             'total_chat_sessions' => EnhancedChatSession::where('user_id', $user->id)->count(),
@@ -58,7 +58,7 @@ class DashboardController extends Controller
             ->get();
 
         // Knowledge base durumları
-        $kbStatuses = KnowledgeBase::where('project_id', function($query) use ($user) {
+        $kbStatuses = KnowledgeBase::whereIn('project_id', function($query) use ($user) {
             $query->select('id')->from('projects')->where('created_by', $user->id);
         })
         ->selectRaw('processing_status as status, COUNT(*) as count')

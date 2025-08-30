@@ -9,6 +9,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
 
 
 Route::get('/', function () {
@@ -45,7 +46,6 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Dashboard Routes (Protected)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/dashboard/profile', [DashboardController::class, 'updateProfile'])->name('dashboard.profile.update');
     Route::post('/dashboard/profile/avatar', [DashboardController::class, 'updateAvatar'])->name('dashboard.profile.avatar.update');
     Route::post('/dashboard/profile/avatar/remove', [DashboardController::class, 'removeAvatar'])->name('dashboard.profile.avatar.remove');
@@ -64,6 +64,7 @@ Route::middleware(['auth'])->group(function () {
 
 // Dashboard Routes with Subscription Check (Protected)
 Route::middleware(['auth', 'subscription'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     // Projects Routes
     Route::get('/dashboard/projects', [App\Http\Controllers\ProjectsController::class, 'index'])->name('dashboard.projects');
     Route::get('/dashboard/projects/load-content', [App\Http\Controllers\ProjectsController::class, 'loadContent'])->name('dashboard.projects.load-content');
@@ -157,6 +158,24 @@ Route::get('/admin/analytics/load-content', [AdminController::class, 'loadAnalyt
         'update' => 'admin.subscriptions.update',
         'destroy' => 'admin.subscriptions.destroy',
     ]);
+    
+    // Mail Templates Management
+    Route::resource('admin/mail-templates', \App\Http\Controllers\Admin\MailTemplateController::class)->names([
+        'index' => 'admin.mail-templates.index',
+        'create' => 'admin.mail-templates.create',
+        'store' => 'admin.mail-templates.store',
+        'show' => 'admin.mail-templates.show',
+        'edit' => 'admin.mail-templates.edit',
+        'update' => 'admin.mail-templates.update',
+        'destroy' => 'admin.mail-templates.destroy',
+    ]);
+    
+    // Mail Template Additional Routes
+    Route::post('/admin/mail-templates/{id}/toggle-status', [\App\Http\Controllers\Admin\MailTemplateController::class, 'toggleStatus'])->name('admin.mail-templates.toggle-status');
+    Route::get('/admin/mail-templates/{id}/test', [\App\Http\Controllers\Admin\MailTemplateController::class, 'test'])->name('admin.mail-templates.test');
+    Route::post('/admin/mail-templates/{id}/send-test', [\App\Http\Controllers\Admin\MailTemplateController::class, 'sendTest'])->name('admin.mail-templates.send-test');
+    Route::post('/admin/mail-templates/{id}/duplicate', [\App\Http\Controllers\Admin\MailTemplateController::class, 'duplicate'])->name('admin.mail-templates.duplicate');
+    Route::get('/admin/mail-templates/stats', [\App\Http\Controllers\Admin\MailTemplateController::class, 'stats'])->name('admin.mail-templates.stats');
 });
 
 
@@ -187,4 +206,16 @@ Route::get('/test-kb-ui', function () {
 // Public Widget Customization API (for React app)
 Route::get('/api/widget-customization', [App\Http\Controllers\WidgetCustomizationController::class, 'getPublicCustomization'])->name('api.widget-customization');
 
+// ... existing code ...
 
+// Payment routes
+Route::middleware(['auth'])->group(function () {
+     Route::post('/subscription/subscribe', [PaymentController::class, 'subscribe'])->name('dashboard.subscription.subscribe');
+     Route::post('/payment/get-token', [PaymentController::class, 'getPaytrToken'])->name('payment.get-token');
+     Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
+     Route::get('/payment/fail', [PaymentController::class, 'fail'])->name('payment.fail');
+ });
+ 
+ // PayTR notification URL (auth gerektirmez)
+ Route::post('/payment/notification', [PaymentController::class, 'notification'])->name('payment.notification');
+ Route::get('/payment/notification', [App\Http\Controllers\PaymentController::class, 'notification'])->name('payment.notification');

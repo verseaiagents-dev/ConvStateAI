@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\App;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
         // Set remember me cookie lifetime to 90 days
         Cookie::queue('remember_web', null, 90 * 24 * 60); // 90 days in minutes
         
-        // Set remember me cookie lifetime to 90 days
-        Cookie::queue('remember_web', null, 90 * 24 * 60); // 90 days in minutes
+        // Force Turkish language for all users temporarily
+        App::setLocale('tr');
     }
 }

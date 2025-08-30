@@ -17,28 +17,13 @@
                 {{ __('dashboard.welcome_description') }}
             </p>
 
-            @if(!$user->hasActiveSubscription())
-                <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-4">
-                    <div class="flex items-center space-x-3">
-                        <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                        <div>
-                            <h3 class="text-lg font-semibold text-yellow-400">Aktif Plan Gerekli</h3>
-                            <p class="text-yellow-300">Dashboard özelliklerini kullanmak için bir plan seçin.</p>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <a href="{{ route('dashboard.subscription.index') }}" class="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors duration-200">
-                            Plan Seç
-                        </a>
-                    </div>
-                </div>
-            @else
-                @php
-                    $subscription = $user->activeSubscription;
-                    $daysRemaining = $subscription->days_remaining;
-                @endphp
+            @if($user->hasActiveSubscription())
+            @php
+            $subscription = $user->activeSubscription;
+            $daysRemaining = $subscription->days_remaining;
+        @endphp 
+     
+             
                 
                 @if($daysRemaining <= 7)
                     <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
@@ -47,13 +32,13 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                             </svg>
                             <div>
-                                <h3 class="text-lg font-semibold text-red-400">Plan Süresi Dolmak Üzere</h3>
-                                <p class="text-red-300">Planınızın süresi {{ $daysRemaining }} gün sonra dolacak.</p>
+                                <h3 class="text-lg font-semibold text-red-400">{{ __('dashboard.plan_expiring_soon') }}</h3>
+                                <p class="text-red-300">{{ __('dashboard.plan_expires_in_days', ['days' => $daysRemaining]) }}</p>
                             </div>
                         </div>
                         <div class="mt-3">
                             <a href="{{ route('dashboard.subscription.index') }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors duration-200">
-                                Planı Yenile
+                                {{ __('dashboard.renew_plan') }}
                             </a>
                         </div>
                     </div>
@@ -66,36 +51,36 @@
         <!-- Project Overview -->
         <div class="glass-effect rounded-xl p-6">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-semibold text-white">Proje Genel Bakış</h3>
+                <h3 class="text-xl font-semibold text-white">{{ __('dashboard.project_overview') }}</h3>
                 <a href="{{ route('dashboard.projects') }}" class="px-4 py-2 bg-purple-glow hover:bg-purple-dark text-white font-medium rounded-lg transition-all duration-200">
-                    Tüm Projeleri Gör
+                    {{ __('dashboard.view_all_projects') }}
                 </a>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @forelse($projectStats as $project)
                     <div class="p-4 bg-gray-800/30 rounded-lg border border-gray-700 hover:border-purple-500/50 transition-all duration-200">
                         <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-white font-medium">{{ $project->name ?? 'İsimsiz Proje' }}</h4>
+                            <h4 class="text-white font-medium">{{ $project->name ?? __('dashboard.unnamed_project') }}</h4>
                             <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ ($project->status ?? '') === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400' }}">
-                                {{ ($project->status ?? '') === 'active' ? 'Aktif' : 'Pasif' }}
+                                {{ ($project->status ?? '') === 'active' ? __('dashboard.active') : __('dashboard.inactive') }}
                             </span>
                         </div>
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
-                                <span class="text-gray-400">Knowledge Base:</span>
+                                <span class="text-gray-400">{{ __('dashboard.knowledge_base_count') }}:</span>
                                 <span class="text-white">{{ $project->knowledge_bases_count ?? 0 }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-400">Chat Sessions:</span>
+                                <span class="text-gray-400">{{ __('dashboard.chat_sessions_count') }}:</span>
                                 <span class="text-white">{{ $project->chat_sessions_count ?? 0 }}</span>
                             </div>
                         </div>
                     </div>
                 @empty
                     <div class="col-span-full text-center py-8">
-                        <p class="text-gray-400 mb-4">Henüz proje oluşturmadınız</p>
+                        <p class="text-gray-400 mb-4">{{ __('dashboard.no_projects_yet') }}</p>
                         <a href="{{ route('dashboard.projects') }}" class="px-6 py-3 bg-purple-glow hover:bg-purple-dark text-white font-medium rounded-lg transition-all duration-200">
-                            İlk Projeyi Oluştur
+                            {{ __('dashboard.create_first_project') }}
                         </a>
                     </div>
                 @endforelse
@@ -108,7 +93,7 @@
             <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Toplam Proje</p>
+                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_projects') }}</p>
                         <p class="mt-2 text-3xl font-bold text-white">{{ $stats['total_projects'] }}</p>
                     </div>
                     <div class="p-3 bg-purple-500/20 rounded-full">
@@ -123,7 +108,7 @@
             <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Knowledge Base</p>
+                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_knowledge_bases') }}</p>
                         <p class="mt-2 text-3xl font-bold text-white">{{ $stats['total_knowledge_bases'] }}</p>
                     </div>
                     <div class="p-3 bg-blue-500/20 rounded-full">
@@ -138,7 +123,7 @@
             <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Chat Oturumu</p>
+                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_chat_sessions') }}</p>
                         <p class="mt-2 text-3xl font-bold text-white">{{ $stats['total_chat_sessions'] }}</p>
                     </div>
                     <div class="p-3 bg-green-500/20 rounded-full">
@@ -153,7 +138,7 @@
             <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/10">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Toplam Intent</p>
+                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_intents') }}</p>
                         <p class="mt-2 text-3xl font-bold text-white">{{ $stats['total_intents'] }}</p>
                     </div>
                     <div class="p-3 bg-yellow-500/20 rounded-full">
@@ -168,7 +153,7 @@
             <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-pink-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/10">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Toplam Ürün</p>
+                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_products') }}</p>
                         <p class="mt-2 text-3xl font-bold text-white">{{ $stats['total_products'] }}</p>
                     </div>
                     <div class="p-3 bg-pink-500/20 rounded-full">
@@ -183,7 +168,7 @@
             <div class="glass-effect rounded-xl p-6 border border-gray-700 hover:border-teal-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-teal-500/10">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Toplam Etkileşim</p>
+                        <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ __('dashboard.total_interactions') }}</p>
                         <p class="mt-2 text-3xl font-bold text-white">{{ $stats['total_interactions'] }}</p>
                     </div>
                     <div class="p-3 bg-teal-500/20 rounded-full">
@@ -199,7 +184,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Chat Session Trend Chart -->
             <div class="glass-effect rounded-xl p-6">
-                <h3 class="text-xl font-semibold text-white mb-4">Son 7 Gün Chat Trendi</h3>
+                <h3 class="text-xl font-semibold text-white mb-4">{{ __('dashboard.chat_trend_last_7_days') }}</h3>
                 <div class="h-64 flex items-end justify-between space-x-2">
                     @php
                         $maxCount = !empty($chatTrend) ? max(array_values($chatTrend)) : 1;
@@ -223,7 +208,7 @@
 
             <!-- Knowledge Base Status -->
             <div class="glass-effect rounded-xl p-6">
-                <h3 class="text-xl font-semibold text-white mb-4">Knowledge Base Durumları</h3>
+                <h3 class="text-xl font-semibold text-white mb-4">{{ __('dashboard.knowledge_base_statuses') }}</h3>
                 <div class="space-y-3">
                     @foreach($kbStatuses as $status => $count)
                         <div class="flex items-center justify-between">
@@ -261,7 +246,7 @@
                         </div>
                     @endforeach
                     @if(empty($kbStatuses))
-                        <p class="text-gray-400 text-center py-4">Henüz knowledge base yok</p>
+                        <p class="text-gray-400 text-center py-4">{{ __('dashboard.no_knowledge_base_yet') }}</p>
                     @endif
                 </div>
             </div>
@@ -271,7 +256,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Top Intents -->
             <div class="glass-effect rounded-xl p-6">
-                <h3 class="text-xl font-semibold text-white mb-4">En Çok Kullanılan Intents</h3>
+                <h3 class="text-xl font-semibold text-white mb-4">{{ __('dashboard.top_intents') }}</h3>
                 <div class="space-y-3">
                     @forelse($topIntents as $intent)
                         <div class="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
@@ -280,23 +265,23 @@
                                     <span class="text-blue-400 text-sm font-medium">{{ $loop->iteration }}</span>
                                 </div>
                                 <div>
-                                    <p class="text-white font-medium">{{ $intent->name ?? 'İsimsiz Intent' }}</p>
-                                    <p class="text-gray-400 text-sm">{{ $intent->keywords_count ?? 0 }} anahtar kelime</p>
+                                    <p class="text-white font-medium">{{ $intent->name ?? __('dashboard.unnamed_intent') }}</p>
+                                    <p class="text-gray-400 text-sm">{{ $intent->keywords_count ?? 0 }} {{ __('dashboard.keywords_count') }}</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="text-xs text-gray-500">{{ $intent->created_at ? $intent->created_at->diffForHumans() : 'Bilinmiyor' }}</p>
+                                <p class="text-xs text-gray-500">{{ $intent->created_at ? $intent->created_at->diffForHumans() : __('dashboard.unknown') }}</p>
                             </div>
                         </div>
                     @empty
-                        <p class="text-gray-400 text-center py-4">Henüz intent yok</p>
+                        <p class="text-gray-400 text-center py-4">{{ __('dashboard.no_intents_yet') }}</p>
                     @endforelse
                 </div>
             </div>
 
             <!-- Recent Chat Sessions -->
             <div class="glass-effect rounded-xl p-6">
-                <h3 class="text-xl font-semibold text-white mb-4">Son Chat Oturumları</h3>
+                <h3 class="text-xl font-semibold text-white mb-4">{{ __('dashboard.recent_chat_sessions') }}</h3>
                 <div class="space-y-3">
                     @forelse($recentChatSessions as $session)
                         <div class="flex items-center space-x-3 p-3 bg-gray-800/30 rounded-lg">
@@ -306,17 +291,17 @@
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <p class="text-white font-medium">Session ID: {{ $session->session_id ?? 'Bilinmiyor' }}</p>
-                                <p class="text-gray-400 text-sm">{{ $session->created_at ? $session->created_at->diffForHumans() : 'Bilinmiyor' }}</p>
+                                <p class="text-white font-medium">{{ __('dashboard.session_id') }}: {{ $session->session_id ?? __('dashboard.unknown') }}</p>
+                                <p class="text-gray-400 text-sm">{{ $session->created_at ? $session->created_at->diffForHumans() : __('dashboard.unknown') }}</p>
                             </div>
                             <div class="text-right">
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ ($session->status ?? '') === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400' }}">
-                                    {{ ($session->status ?? '') === 'active' ? 'Aktif' : 'Pasif' }}
+                                    {{ ($session->status ?? '') === 'active' ? __('dashboard.active') : __('dashboard.inactive') }}
                                 </span>
                             </div>
                         </div>
                     @empty
-                        <p class="text-gray-400 text-center py-4">Henüz chat oturumu yok</p>
+                        <p class="text-gray-400 text-center py-4">{{ __('dashboard.no_chat_sessions_yet') }}</p>
                     @endforelse
                 </div>
             </div>
@@ -336,8 +321,8 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="text-white font-medium">Projeler</p>
-                            <p class="text-gray-400 text-sm">Projeleri yönet</p>
+                            <p class="text-white font-medium">{{ __('dashboard.projects') }}</p>
+                            <p class="text-gray-400 text-sm">{{ __('dashboard.manage_projects') }}</p>
                         </div>
                     </div>
                 </a>
@@ -350,8 +335,8 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="text-white font-medium">Knowledge Base</p>
-                            <p class="text-gray-400 text-sm">Bilgi tabanını yönet</p>
+                            <p class="text-white font-medium">{{ __('dashboard.knowledge_base') }}</p>
+                            <p class="text-gray-400 text-sm">{{ __('dashboard.manage_knowledge_base') }}</p>
                         </div>
                     </div>
                 </a>
@@ -364,8 +349,8 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="text-white font-medium">Chat Oturumları</p>
-                            <p class="text-gray-400 text-sm">Konuşmaları takip et</p>
+                            <p class="text-white font-medium">{{ __('dashboard.chat_sessions') }}</p>
+                            <p class="text-gray-400 text-sm">{{ __('dashboard.track_conversations') }}</p>
                         </div>
                     </div>
                 </a>
@@ -395,13 +380,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                     </svg>
                 </div>
-                <h3 class="text-2xl font-bold text-white mb-4">Dashboard Özellikleri Kilitli</h3>
+                <h3 class="text-2xl font-bold text-white mb-4">{{ __('dashboard.dashboard_features_locked') }}</h3>
                 <p class="text-gray-300 mb-6">
-                    Dashboard özelliklerini kullanmak için aktif bir planınız olmalıdır. 
-                    Plan seçerek tüm özelliklere erişim sağlayabilirsiniz.
+                    {{ __('dashboard.dashboard_features_locked_description') }}
                 </p>
                 <a href="{{ route('dashboard.subscription.index') }}" class="inline-flex items-center px-6 py-3 bg-purple-glow hover:bg-purple-dark text-white font-medium rounded-lg transition-all duration-200">
-                    Plan Seç ve Başla
+                    {{ __('dashboard.choose_plan_and_start') }}
                 </a>
             </div>
         </div>

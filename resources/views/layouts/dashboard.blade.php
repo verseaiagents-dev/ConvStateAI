@@ -356,8 +356,8 @@
                             </div>
                         </div>
                         
-                        <!-- Language Switcher -->
-                        <div class="relative">
+                        <!-- Language Switcher temporarily disabled - all users see Turkish -->
+                        <!-- <div class="relative">
                             <button id="language-dropdown" class="flex items-center space-x-1 px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-full transition-colors">
                                 <span class="w-4 h-4">
                                     @if(app()->getLocale() == 'tr')
@@ -385,7 +385,7 @@
                                     </button>
                                 </form>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>
@@ -526,30 +526,30 @@
             }
         });
 
-        // Language dropdown functionality
-        const languageDropdown = document.getElementById('language-dropdown');
-        const languageMenu = document.getElementById('language-menu');
+        // Language dropdown functionality - temporarily disabled
+        // const languageDropdown = document.getElementById('language-dropdown');
+        // const languageMenu = document.getElementById('language-menu');
 
-        if (languageDropdown && languageMenu) {
-            languageDropdown.addEventListener('click', (e) => {
-                e.stopPropagation();
-                languageMenu.classList.toggle('hidden');
-            });
+        // if (languageDropdown && languageMenu) {
+        //     languageDropdown.addEventListener('click', (e) => {
+        //         e.stopPropagation();
+        //         languageMenu.classList.toggle('hidden');
+        //     });
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!languageDropdown.contains(e.target) && !languageMenu.contains(e.target)) {
-                    languageMenu.classList.add('hidden');
-                }
-            });
+        //     // Close dropdown when clicking outside
+        //     document.addEventListener('click', (e) => {
+        //         if (!languageDropdown.contains(e.target) && !languageMenu.contains(e.target)) {
+        //         languageMenu.classList.add('hidden');
+        //         }
+        //     });
 
-            // Close dropdown on escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    languageMenu.classList.add('hidden');
-                }
-            });
-        }
+        //     // Close dropdown on escape key
+        //     document.addEventListener('keydown', (e) => {
+        //         if (e.key === 'Escape') {
+        //         languageMenu.classList.add('hidden');
+        //         }
+        //     });
+        // }
 
 
     </script>

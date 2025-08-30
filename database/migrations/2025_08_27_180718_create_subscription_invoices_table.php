@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
+    /**Schema::create('widget_actions'
      * Run the migrations.
      */
     public function up(): void

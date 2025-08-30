@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\MailService;
+use App\Events\UserRegistered;
+use App\Events\UserPasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +15,13 @@ use Illuminate\Validation\Rules;
 
 class AuthController extends Controller
 {
+    protected $mailService;
+
+    public function __construct(MailService $mailService)
+    {
+        $this->mailService = $mailService;
+    }
+
     /**
      * Show login form
      */
@@ -69,9 +79,12 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // Event tetikle - otomatik mail gönderimi
+        event(new UserRegistered($user));
+
         Auth::login($user);
 
-        return redirect('/dashboard');
+        return redirect('/dashboard')->with('success', 'Hesabınız başarıyla oluşturuldu! Hoşgeldin maili gönderildi.');
     }
 
     /**
@@ -95,9 +108,21 @@ class AuthController extends Controller
             $request->only('email')
         );
 
-        return $status === Password::RESET_LINK_SENT
-            ? back()->with(['status' => __($status)])
-            : back()->withErrors(['email' => __($status)]);
+        if ($status === Password::RESET_LINK_SENT) {
+            // Event tetikle - otomatik mail gönderimi
+            $user = User::where('email', $request->email)->first();
+            if ($user) {
+                $resetUrl = url(route('password.reset', [
+                    'token' => Password::createToken($user),
+                    'email' => $user->email,
+                ]));
+                event(new UserPasswordReset($user, $resetUrl));
+            }
+            
+            return back()->with(['status' => __($status)]);
+        }
+
+        return back()->withErrors(['email' => __($status)]);
     }
 
     /**

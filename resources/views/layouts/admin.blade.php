@@ -119,6 +119,13 @@
                     <span>Kullanıcı Yönetimi</span>
                 </a>
 
+                <a href="{{ route('admin.mail-templates.index') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('admin.mail-templates*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Mail Template'ler</span>
+                </a>
+
                 <a href="{{ route('dashboard.chat-sessions') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-purple-glow/10 hover:text-purple-glow transition-all duration-200 {{ request()->routeIs('dashboard.chat-sessions*') ? 'bg-purple-glow/20 text-purple-glow' : '' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>

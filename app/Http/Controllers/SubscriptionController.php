@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Events\UserSubscriptionActivated;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -58,7 +59,7 @@ class SubscriptionController extends Controller
             $trialEndsAt = $endDate;
         }
 
-        Subscription::create([
+        $subscription = Subscription::create([
             'tenant_id' => $user->id,
             'plan_id' => $plan->id,
             'start_date' => $startDate,
@@ -66,6 +67,9 @@ class SubscriptionController extends Controller
             'status' => 'active',
             'trial_ends_at' => $trialEndsAt
         ]);
+
+        // Event tetikle - otomatik mail gönderimi
+        event(new UserSubscriptionActivated($user, $subscription));
 
         return redirect()->route('dashboard.subscription.index')
             ->with('success', 'Plan başarıyla seçildi! Artık tüm özellikleri kullanabilirsiniz.');
